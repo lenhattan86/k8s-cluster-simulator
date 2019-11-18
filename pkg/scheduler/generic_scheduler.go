@@ -96,7 +96,6 @@ func (sched *GenericScheduler) Schedule(
 			return []Event{}, err
 		}
 		log.L.Debugf("Trying to schedule pod %s", podKey)
-
 		// ... try to bind the pod to a node.
 		result, err := sched.scheduleOne(pod, nodeLister, nodeInfoMap, pendingPods)
 
@@ -227,6 +226,10 @@ func (sched *GenericScheduler) filter(
 	filtered, failedPredicateMap, err := filterWithPlugins(pod, sched.predicates, nodes, nodeInfoMap, podQueue)
 	if err != nil {
 		return []*v1.Node{}, core.FailedPredicateMap{}, err
+	}
+	nodeNames := make([]string, 0, len(filtered))
+	for _, node := range filtered {
+		nodeNames = append(nodeNames, node.Name)
 	}
 
 	if l.IsDebugEnabled() {
