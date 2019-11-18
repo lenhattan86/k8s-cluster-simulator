@@ -5,8 +5,12 @@ sudo apt update
 wget https://dl.google.com/go/go1.13.3.linux-amd64.tar.gz
 sudo tar -xvf go1.13.3.linux-amd64.tar.gz
 sudo mv go /usr/local
+
 export GOROOT=/usr/local/go
-export PATH=$GOROOT/bin:$PATH
+export PATH=/usr/local/go/bin:$PATH
+echo """export GOROOT=/usr/local/go
+export PATH=/usr/local/go/bin:$PATH
+""" >> .bashrc
 
 ## setup python, pip and its library.
 
@@ -24,9 +28,6 @@ wget --load-cookies /tmp/cookies.txt \
   -O machines.tar && rm -rf /tmp/cookies.txt
 sudo tar -xvf machines.tar
 
-
-mkdir ~/go
-mkdir ~/go/src
-mkdir ~/go/src/github.com/pfnet-research
-cd ~/go/src/github.com/pfnet-research
+## download code
+mkdir ~/go; mkdir ~/go/src; mkdir ~/go/src/github.com; mkdir ~/go/src/github.com/pfnet-research; cd ~/go/src/github.com/pfnet-research
 git clone https://github.com/lenhattan86/k8s-cluster-simulator
