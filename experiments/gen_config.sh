@@ -8,6 +8,7 @@ mem=$5
 tick=$6
 metricsTick=$7
 clock="$8"
+log_path="$9"
 
 echo """# Log level defined by sirupsen/logrus.
 # Optional (info, debug)
@@ -30,9 +31,9 @@ metricsTick: $metricsTick
 # The metrics is formatted with the given formatter.
 # Optional (default: not writing metrics)
 metricsLogger:
-- dest: $log_file
+- dest: $log_path/$log_file
   formatter: JSON
-#- dest: kubesim-hr-${scheduler}.log
+#- dest: $log_path/kubesim-hr-${scheduler}.log
 #  formatter: humanReadable
 #- dest: stdout
 #  formatter: table

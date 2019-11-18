@@ -17,11 +17,12 @@ totalPodNumber=10000
 workloadSubsetFactor=10
 isDebug=true
 path="/ssd/projects/google-trace-data"
+log_path="/ssd/projects/google-trace-data"
 runSim(){
     start="2019-01-01T00:00:00+09:00"
     end="2019-01-31T00:00:00+09:00"
     startTrace="600000000"
-    ./gen_config.sh $1 "." $nodeNum $cpuPerNode $memPerNode $tick $metricsTick "$start"
+    ./gen_config.sh $1 "." $nodeNum $cpuPerNode $memPerNode $tick $metricsTick "$start" $log_path
     go run $(go list ./...) --config="./config/cluster_$1" \
     --workload="$path/workload"  \
     --scheduler="$1" \

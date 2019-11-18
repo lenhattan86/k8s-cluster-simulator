@@ -13,7 +13,7 @@ cpuStr = 'cpu'
 show=False
 loads = [False, False, False, False, False, True, False]
 plots = [True, False, False]
-
+path = "/ssd/projects/google-trace-data"
 
 def loadLog(filepath) :
     cpuUsages = []
@@ -120,7 +120,7 @@ cpuAllocatables = []
 cpuRequests = []
 
 for m in methods:
-    b, ol, ob, u, ur, mu, a = loadLog("kubesim_"+m+".log")
+    b, ol, ob, u, ur, mu, a = loadLog(path+"/kubesim_"+m+".log")
     busyNodes.append(b)
     overloadNodes.append(ol)
     overbookNodes.append(ob)
@@ -152,7 +152,7 @@ if(plots[0]):
     plt.suptitle("Max Cpu Usage")
     plt.ylim(0,Y_MAX)
 
-    fig_util.savefig(FIG_PATH+"util.pdf", bbox_inches='tight')
+    fig_util.savefig(FIG_PATH+"/util.pdf", bbox_inches='tight')
 
 if False:
     Y_MAX = cap*20
@@ -166,7 +166,7 @@ if False:
     plt.ylim(0,Y_MAX)
     plt.suptitle("Total Cpu Request")
 
-    fig_util.savefig(FIG_PATH+"request.pdf", bbox_inches='tight')
+    fig_util.savefig(FIG_PATH+"/request.pdf", bbox_inches='tight')
 
 ## plot performance: number of overload nodes.
 if False:
@@ -180,7 +180,7 @@ if False:
     plt.suptitle("Overload")
     # plt.ylim(0,Y_MAX)
 
-    fig_util.savefig(FIG_PATH+"perf.pdf", bbox_inches='tight')
+    fig_util.savefig(FIG_PATH+"/perf.pdf", bbox_inches='tight')
     
 ## plot performance: number of overload nodes.
 if False:
@@ -194,7 +194,7 @@ if False:
     plt.suptitle("Overbook")
     # plt.ylim(0,Y_MAX)
 
-    fig_util.savefig(FIG_PATH+"overbook.pdf", bbox_inches='tight')
+    fig_util.savefig(FIG_PATH+"/overbook.pdf", bbox_inches='tight')
 
 ## show figures
 if show:
