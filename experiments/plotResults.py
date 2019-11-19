@@ -14,7 +14,8 @@ show=False
 loads = [False, False, False, False, False, True, False]
 plots = [True, False, False]
 path = "/ssd/projects/google-trace-data"
-
+# path = "./"
+line_num = 60*24
 def loadLog(filepath) :
     cpuUsages = []
     maxCpuUsages = []
@@ -28,9 +29,11 @@ def loadLog(filepath) :
     overBookNodes = []
 
     with open(filepath) as fp:
-        content = fp.readlines()
+        line = fp.readline()
+        # content = fp.readlines()
         i = 0
-        for line in content:
+        while line:
+        # for line in content:
             data = json.loads(line)
             nodeDict = data['Nodes']
             busyNode = 0
@@ -90,7 +93,10 @@ def loadLog(filepath) :
             if (loads[6]):
                 cpuRequests.append(totalCpuRequest)
 
-            i=i+1
+            i=i+1            
+            if line_num > 0 and i >= line_num:
+                break
+            line = fp.readline()
 
     fp.close()
 

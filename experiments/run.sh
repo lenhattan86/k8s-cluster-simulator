@@ -1,4 +1,5 @@
 echo "================== RUNNING=================="
+date
 
 BEST_FIT="bestfit"
 OVER_SUB="oversub"
@@ -7,20 +8,20 @@ ONE_SHOT="oneshot"
 WORST_FIT="worstfit"
 
 oversub=1.5
-nodeNum=500
+nodeNum=5000
 cpuPerNode=64
 memPerNode=128
 tick=60
 metricsTick=60
-maxTaskLengthSeconds=3600 # seconds.
-totalPodNumber=10000
-workloadSubsetFactor=10
+maxTaskLengthSeconds=1800 # seconds.
+totalPodNumber=500000
+workloadSubsetFactor=1
 isDebug=true
 path="/ssd/projects/google-trace-data"
 log_path="/ssd/projects/google-trace-data"
 runSim(){
     start="2019-01-01T00:00:00+09:00"
-    end="2019-01-31T00:00:00+09:00"
+    end="2019-01-01T05:00:00+09:00"
     startTrace="600000000"
     ./gen_config.sh $1 "." $nodeNum $cpuPerNode $memPerNode $tick $metricsTick "$start" $log_path
     go run $(go list ./...) --config="./config/cluster_$1" \
@@ -45,15 +46,13 @@ runSim $WORST_FIT false true
 echo "$WORST_FIT took $SECONDS seconds"
 
 SECONDS=0 
-runSim $OVER_SUB false false
-echo "$OVER_SUB took $SECONDS seconds"
-
-SECONDS=0 
+runSim $OVER_SUB false false 
 runSim $ONE_SHOT false false
-echo "$ONE_SHOT took $SECONDS seconds"
+echo "others took $SECONDS seconds"
 
 SECONDS=0 
 echo "==================Plotting=================="
 python plotResults.py
 echo "plotResults.py took $SECONDS seconds"
 echo "==================FINISHED=================="
+date

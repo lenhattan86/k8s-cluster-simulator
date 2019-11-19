@@ -115,7 +115,7 @@ func (s *mySubmitter) Submit(
 	// terminate the simulation before end time
 
 	if s.endClock.Before(clock) {
-		log.L.Infof("=========== Terminate simumation ========== @ %v", clock.ToRFC3339())
+		log.L.Infof("=========== Terminate simulation ========== @ %v", clock.ToRFC3339())
 		events := make([]submitter.Event, 0, 1)
 		events = append(events, &submitter.TerminateSubmitterEvent{})
 		return events, nil
