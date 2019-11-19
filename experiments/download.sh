@@ -18,6 +18,6 @@ sim_folder="~/go/src/github.com/pfnet-research/k8s-cluster-simulator/experiments
 
 rm -rf $dest
 mkdir $dest
-scp $user@$server:$log_folder/*.log $dest/
+# scp $user@$server:$log_folder/*.log $dest/
 scp $user@$server:$sim_folder/run.sh $dest/
 scp $user@$server:$sim_folder/figs/*.pdf $dest/

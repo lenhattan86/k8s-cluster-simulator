@@ -1,3 +1,9 @@
+import os
+import matplotlib as mpl
+if os.environ.get('DISPLAY','') == '':
+    print('no display found. Using non-interactive Agg backend')
+    mpl.use('Agg')
+
 import sys
 import json
 import re
@@ -33,8 +39,13 @@ def loadLog(filepath) :
         # content = fp.readlines()
         i = 0
         while line:
-        # for line in content:
-            data = json.loads(line)
+        # for line in content:ot
+            try:
+                data = json.loads(line)
+            except:
+                print("An json.loads(line) exception occurred") 
+                continue           
+
             nodeDict = data['Nodes']
             busyNode = 0
             overloadNode = 0
