@@ -40,13 +40,6 @@ def loadLog(filepath) :
         i = 0
         while line:
         # for line in content:ot
-            try:
-                data = json.loads(line)
-            except:
-                print("An json.loads(line) exception occurred") 
-                continue           
-
-            nodeDict = data['Nodes']
             busyNode = 0
             overloadNode = 0
             overBookNode = 0
@@ -54,6 +47,14 @@ def loadLog(filepath) :
             totalCapacity = 0
             maxCpuUsage = 0
             totalCpuRequest = 0
+
+            try:
+                data = json.loads(line)
+            except:
+                print("An json.loads(line) exception occurred") 
+                continue           
+
+            nodeDict = data['Nodes']
             for nodeName, node in nodeDict.items():
                 cpuUsage = 0
                 cpuAllocatable = 0
