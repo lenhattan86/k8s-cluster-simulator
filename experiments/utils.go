@@ -60,7 +60,7 @@ func BuildClock(startClock string, shift int64) (clock.Clock, error) {
 	return clk, nil
 }
 
-func ConvertTraceToPod(path string, csvFile string, startTimestamp string, cpuFactor int, memFactor int, maxTaskLengthSeconds int) (*v1.Pod, error) {
+func ConvertTraceToPod(csvFile string, startTimestamp string, cpuFactor int, memFactor int, maxTaskLengthSeconds int) (*v1.Pod, error) {
 	// read csv files
 	phases := []int{}
 	cpuUsages := []int{}
@@ -69,10 +69,10 @@ func ConvertTraceToPod(path string, csvFile string, startTimestamp string, cpuFa
 	requestMem := 0
 	taskLast := 0
 	// Load a csv file.
-	f, err := os.Open(fmt.Sprintf("%s/%s", path, csvFile))
+	f, err := os.Open(csvFile)
 	if err != nil {
 		log.L.Errorf("%v", err)
-		return nil, nil
+		return nil, fmt.Errorf("%v", err)
 	}
 	fileName := string(f.Name())
 	// Create a new reader.
@@ -181,6 +181,10 @@ func ConvertTraceToPod(path string, csvFile string, startTimestamp string, cpuFa
 }
 
 func WritePodAsJson(pod v1.Pod, path string, clock clock.Clock) {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		os.Mkdir(path, os.ModePerm)
+	}
+
 	buffer := new(bytes.Buffer)
 	encoder := json.NewEncoder(buffer)
 	encoder.SetIndent("", "\t")
@@ -201,19 +205,18 @@ func WritePodAsJson(pod v1.Pod, path string, clock clock.Clock) {
 
 }
 
-func TaskInChronologicalOrder(taskName1, taskName2 interface{}) bool {
-	strArr1 := strings.Split(taskName1.(string), "_")
-	strArr2 := strings.Split(taskName2.(string), "_")
+func TaskInChronologicalOrder(path1, path2 interface{}) bool {
+	arr1 := strings.Split(path1.(string), "/")
+	arr2 := strings.Split(path2.(string), "/")
+	taskName1 := arr1[len(arr1)-1]
+	taskName2 := arr2[len(arr2)-1]
+	strArr1 := strings.Split(taskName1, "_")
+	strArr2 := strings.Split(taskName2, "_")
 	a1, _ := strconv.Atoi(strArr1[0])
 	a2, _ := strconv.Atoi(strArr2[0])
 	if a1 == a2 {
 		j1, _ := strconv.Atoi(strArr1[1])
 		j2, _ := strconv.Atoi(strArr2[1])
-		// if j1 == j2 {
-		// 	t1, _ := strconv.Atoi(strArr1[2])
-		// 	t2, _ := strconv.Atoi(strArr2[2])
-		// 	return t1 < t2
-		// }
 		return j1 < j2
 	}
 	return a1 < a2

@@ -6,19 +6,26 @@ OVER_SUB="oversub"
 PROPOSED="proposed"
 ONE_SHOT="oneshot"
 WORST_FIT="worstfit"
+GENERIC="generic"
 
 oversub=1.5
 nodeNum=5000
 cpuPerNode=64
 memPerNode=128
-tick=60
-metricsTick=60
+
 maxTaskLengthSeconds=7200 # seconds.
-totalPodNumber=500000
+totalPodNumber=600000
 workloadSubsetFactor=1
 isDebug=true
+workloadSubfolderCap=100000
 path="/ssd/projects/google-trace-data"
 log_path="/ssd/projects/google-trace-data"
+tick=60
+metricsTick=60
+# path="./gen/"
+# log_path="./gen/"
+# tick=1
+# metricsTick=1
 runSim(){
     start="2019-01-01T00:00:00+09:00"
     end="2019-01-01T05:00:00+09:00"
@@ -37,22 +44,25 @@ runSim(){
     --tick="$tick" \
     --max-task-length="$maxTaskLengthSeconds" \
     --total-pods-num=$totalPodNumber \
-    --subset-factor=$workloadSubsetFactor\
+    --subset-factor=$workloadSubsetFactor \
+    --workload-subfolder-cap=$workloadSubfolderCap \
     &> run_${1}.out
 }
 #rm -rf *.out
 SECONDS=0
-runSim $WORST_FIT false true
-echo "$WORST_FIT took $SECONDS seconds"
+runSim $GENERIC true true
+echo "Generating workload took $SECONDS seconds"
 
 SECONDS=0 
-runSim $OVER_SUB false false 
-runSim $ONE_SHOT false false
+# runSim $WORST_FIT false false &
+# runSim $OVER_SUB false false &
+# runSim $ONE_SHOT false false &
+wait
 echo "others took $SECONDS seconds"
 
 SECONDS=0 
 echo "==================Plotting=================="
-python plotResults.py
+# python plotResults.py
 echo "plotResults.py took $SECONDS seconds"
 echo "==================FINISHED=================="
 date

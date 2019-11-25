@@ -16,9 +16,9 @@ package main
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
@@ -82,7 +82,10 @@ var (
 	tick                 = 1
 	maxTaskLengthSeconds = 120 // seconds
 	nodeCap              = []int{64 * 1000, 128 * 1024, 1 * 1024 * 1024}
+	workloadSubfolderCap = 2
 )
+
+const workerNum = 64
 
 func init() {
 	log.L.Infof("Running KubeSim @ %s", time.Now().Format(time.RFC850))
@@ -114,6 +117,8 @@ func init() {
 		&totalPodsNum, "total-pods-num", 1, "totalPodsNum")
 	rootCmd.PersistentFlags().IntVar(
 		&workloadSubsetFactor, "subset-factor", 1, "subset factor of workload trace")
+	rootCmd.PersistentFlags().IntVar(
+		&workloadSubfolderCap, "workload-subfolder-cap", 10000, "number of pods/jobs per folder")
 }
 
 var rootCmd = &cobra.Command{
@@ -155,17 +160,29 @@ var rootCmd = &cobra.Command{
 	},
 }
 
-const workerNum = 32
-
 func convertTrace2Workload(tracePath string, workloadPath string) {
-	files, _ := ioutil.ReadDir(tracePath)
-	fileNum := len(files)
+	var paths []string
+	err := filepath.Walk(tracePath,
+		func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if strings.Contains(path, "csv") {
+				paths = append(paths, path)
+			}
+			return nil
+		})
+	if err != nil {
+		log.L.Println(err)
+	}
+
+	fileNum := len(paths)
 	sortableList := kutil.SortableList{CompFunc: TaskInChronologicalOrder}
 	for i := 0; i < fileNum; i++ {
-		sortableList.Items = append(sortableList.Items, files[i].Name())
+		sortableList.Items = append(sortableList.Items, paths[i])
 	}
 	sortableList.Sort()
-	log.L.Infof("Total number of files in the trace folder: %v", len(files))
+	log.L.Infof("Total number of files in the trace folder: %v", len(paths))
 	startTimestamp, _ := strconv.Atoi(startTimestampTrace)
 	startTimestamp = startTimestamp / MICRO_SECONDS
 
@@ -174,7 +191,7 @@ func convertTrace2Workload(tracePath string, workloadPath string) {
 	if fileNum > int(totalPodsNum) {
 		fileNum = int(totalPodsNum)
 	}
-	parralel := true
+	parralel := false
 
 	if parralel {
 		ctx, _ := context.WithCancel(context.Background())
@@ -182,26 +199,32 @@ func convertTrace2Workload(tracePath string, workloadPath string) {
 			if i >= fileNum*workloadSubsetFactor {
 				return
 			}
-			fileName := string(sortableList.Items[i*workloadSubsetFactor].(string))
-			strs := strings.Split(fileName, "_")
+			filePath := string(sortableList.Items[i*workloadSubsetFactor].(string))
+			strs := strings.Split(filePath, "/")
+			fileName := strs[len(strs)-1]
+			strs = strings.Split(fileName, "_")
 			timestamp, _ := strconv.Atoi(strs[0])
 			timestamp = timestamp / 1000000
-			pod, err := ConvertTraceToPod(tracePath, fileName, "0", nodeCap[0], nodeCap[1], maxTaskLengthSeconds)
+			pod, err := ConvertTraceToPod(filePath, "0", nodeCap[0], nodeCap[1], maxTaskLengthSeconds)
 			if err == nil {
 				startClock, _ := BuildClock(startClockStr, int64(timestamp-startTimestamp))
-				WritePodAsJson(*pod, workloadPath, startClock)
+				subWorkload := strconv.Itoa(i / workloadSubfolderCap)
+				WritePodAsJson(*pod, workloadPath+"/"+subWorkload, startClock)
 			}
 		})
 	} else {
 		for i := 0; i < fileNum*workloadSubsetFactor; i += workloadSubsetFactor {
-			fileName := sortableList.Items[i].(string)
-			strs := strings.Split(fileName, "_")
+			filePath := string(sortableList.Items[i*workloadSubsetFactor].(string))
+			strs := strings.Split(filePath, "/")
+			fileName := strs[len(strs)-1]
+			strs = strings.Split(fileName, "_")
 			timestamp, _ := strconv.Atoi(strs[0])
 			timestamp = timestamp / 1000000
-			pod, err := ConvertTraceToPod(tracePath, fileName, "0", nodeCap[0], nodeCap[1], maxTaskLengthSeconds/tick)
+			pod, err := ConvertTraceToPod(filePath, "0", nodeCap[0], nodeCap[1], maxTaskLengthSeconds)
 			if err == nil {
 				startClock, _ := BuildClock(startClockStr, int64(timestamp-startTimestamp))
-				WritePodAsJson(*pod, workloadPath, startClock)
+				subWorkload := strconv.Itoa(i / workloadSubfolderCap)
+				WritePodAsJson(*pod, workloadPath+"/"+subWorkload, startClock)
 			}
 		}
 	}
@@ -209,31 +232,43 @@ func convertTrace2Workload(tracePath string, workloadPath string) {
 }
 
 func buildScheduler() scheduler.Scheduler {
-	if isGenWorkload || isConvertTrace {
+	if isGenWorkload {
+		log.L.Infof("Generating %v pods", totalPodsNum)
 		os.RemoveAll(workloadPath)
 		os.MkdirAll(workloadPath, 0755)
-	}
-	if !isGenWorkload {
 		if isConvertTrace {
 			convertTrace2Workload(tracePath, workloadPath)
+			return nil
 		}
-
-		files, _ := ioutil.ReadDir(workloadPath)
-		totalPodsNum = uint64(len(files))
-		for _, f := range files {
-			fileName := string(f.Name())
-			arr := strings.Split(fileName, "@")
-			clockStr := arr[0]
-			podName := arr[1]
-			if _, ok := podMap[clockStr]; ok {
-				podMap[clockStr] = append(podMap[clockStr], podName)
-			} else {
-				strArr := []string{podName}
-				podMap[clockStr] = strArr
-			}
-		}
-		log.L.Infof("Total number of pods in the workload folder: %v", totalPodsNum)
 	}
+
+	totalPodsNum = 0
+	err := filepath.Walk(workloadPath,
+		func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if strings.Contains(path, "json") {
+				arr := strings.Split(path, "/")
+				l := len(arr)
+				fileName := string(arr[l-1])
+				arr = strings.Split(fileName, "@")
+				clockStr := arr[0]
+				if _, ok := podMap[clockStr]; ok {
+					podMap[clockStr] = append(podMap[clockStr], path)
+				} else {
+					strArr := []string{path}
+					podMap[clockStr] = strArr
+				}
+				totalPodsNum++
+			}
+			return nil
+		})
+	if err != nil {
+		log.L.Println(err)
+	}
+
+	log.L.Infof("Total number of pods in the workload folder: %v", totalPodsNum)
 
 	log.L.Infof("scheduler input %s", schedulerName)
 	log.L.Infof("Submitting %d pods", totalPodsNum)

@@ -14,14 +14,21 @@ echo """export GOROOT=/usr/local/go
 export PATH=/usr/local/go/bin:$PATH
 """ >> .bashrc
 
+## pull go libs
+go get github.com/golang/protobuf/proto
+go get github.com/gogo/protobuf/proto
+
 ## setup python, pip and its library.
 sudo apt install -y python-matplotlib
+sudo apt install -y python3-matplotlib
 sudo apt-get -y install python-pandas
+sudo apt-get -y install python3-pandas
 sudo apt-get -y install python-numpy
+sudo apt-get -y install python3-numpy
 
-# sudo add-apt-repository ppa:jonathonf/python-3.6
+# sudo add-apt-repository ppa:jonathonf/python-3.6 -y
 # sudo apt-get update
-# sudo apt-get install python3.6
+# sudo apt-get -y install python3.6
 # sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.5 1
 # sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.6 2
 # sudo update-alternatives --config python30

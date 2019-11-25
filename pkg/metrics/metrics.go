@@ -42,6 +42,7 @@ const (
 
 // BuildMetrics builds a Metrics at the given clock.
 func BuildMetrics(clock clock.Clock, nodes map[string]*node.Node, queue queue.PodQueue) (Metrics, error) {
+	isTinyMetrics := true
 	metrics := make(map[string]interface{})
 	metrics[ClockKey] = clock.ToRFC3339()
 
@@ -50,13 +51,15 @@ func BuildMetrics(clock clock.Clock, nodes map[string]*node.Node, queue queue.Po
 
 	for name, node := range nodes {
 		nodesMetrics[name] = node.Metrics(clock)
-		for _, pod := range node.PodList() {
-			if !pod.IsTerminated(clock) {
-				key, err := util.PodKey(pod.ToV1())
-				if err != nil {
-					return Metrics{}, err
+		if !isTinyMetrics {
+			for _, pod := range node.PodList() {
+				if !pod.IsTerminated(clock) {
+					key, err := util.PodKey(pod.ToV1())
+					if err != nil {
+						return Metrics{}, err
+					}
+					podsMetrics[key] = pod.Metrics(clock)
 				}
-				podsMetrics[key] = pod.Metrics(clock)
 			}
 		}
 	}

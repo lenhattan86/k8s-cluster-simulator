@@ -80,21 +80,15 @@ func (s *mySubmitter) generateWorkloads(
 func (s *mySubmitter) loadWorkload(
 	clock clock.Clock,
 	met metrics.Metrics) ([]submitter.Event, error) {
-	// find all files matching with clocks.
-	// startClock := clock
-	// endClock := clock.Add(s.tick)
-	podNames := podMap[clock.ToRFC3339()]
+	paths := podMap[clock.ToRFC3339()]
 	// load the pods and submit them.
+	events := make([]submitter.Event, 0, len(paths)+1)
 
-	events := make([]submitter.Event, 0, len(podNames)+1)
-
-	for _, podName := range podNames {
-		fileName := fmt.Sprintf("%s@%s", clock.ToRFC3339(), podName)
-		filePath := fmt.Sprintf("%s/%s", workloadPath, fileName)
-		newPod, err := s.loadPod(filePath)
+	for _, path := range paths {
+		newPod, err := s.loadPod(path)
 		if err != nil {
-			log.L.Errorf("cannot load %s", filePath)
-			return events, fmt.Errorf("cannot load %s", filePath)
+			log.L.Errorf("cannot load %s", path)
+			return events, fmt.Errorf("cannot load %s", path)
 		}
 		submittedPodsNum++
 		events = append(events, &submitter.SubmitEvent{Pod: newPod})
@@ -121,10 +115,9 @@ func (s *mySubmitter) Submit(
 		return events, nil
 	}
 
-	if isGenWorkload {
+	if isGenWorkload && !isConvertTrace {
 		return s.generateWorkloads(clock, met)
 	}
-
 	return s.loadWorkload(clock, met)
 }
 
