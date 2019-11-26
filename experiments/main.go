@@ -55,10 +55,9 @@ const (
 
 // configPath is the path of the config file, defaulting to "config".
 var (
-	configPath     string
-	isGenWorkload  = false
-	isConvertTrace = false
-	// isGenWorkload    = false
+	configPath           string
+	isGenWorkload        = false
+	isConvertTrace       = false
 	workloadPath         string
 	tracePath            string
 	targetNum            = 64 * 4
@@ -80,7 +79,6 @@ var (
 	endClockStr          = "3019-01-01T00:00:00+09:00"
 	startTimestampTrace  = "0"
 	tick                 = 1
-	maxTaskLengthSeconds = 120 // seconds
 	nodeCap              = []int{64 * 1000, 128 * 1024, 1 * 1024 * 1024}
 	workloadSubfolderCap = 2
 )
@@ -107,12 +105,10 @@ func init() {
 		&startClockStr, "start", "2019-01-01T00:00:00+09:00", "start clock")
 	rootCmd.PersistentFlags().StringVar(
 		&endClockStr, "end", "3019-01-01T00:00:00+09:00", "end clock")
+	rootCmd.PersistentFlags().IntVar(
+		&tick, "tick", 1, "schedule tick/metrics tick time")
 	rootCmd.PersistentFlags().StringVar(
 		&startTimestampTrace, "trace-start", "600000000", "start of time stamp in the trace")
-	rootCmd.PersistentFlags().IntVar(
-		&tick, "tick", 1, "over sub factor")
-	rootCmd.PersistentFlags().IntVar(
-		&maxTaskLengthSeconds, "max-task-length", 1, "max-task-length in seconds")
 	rootCmd.PersistentFlags().Uint64Var(
 		&totalPodsNum, "total-pods-num", 1, "totalPodsNum")
 	rootCmd.PersistentFlags().IntVar(
@@ -161,14 +157,25 @@ var rootCmd = &cobra.Command{
 }
 
 func convertTrace2Workload(tracePath string, workloadPath string) {
+	startTimestamp, _ := strconv.Atoi(startTimestampTrace)
+	startTimestamp = startTimestamp / MICRO_SECONDS
+	endClock, err := BuildClock(endClockStr, 0)
+	if err != nil {
+		log.L.Errorf("endClockStr format is not correct, %v", endClockStr)
+	}
+
 	var paths []string
-	err := filepath.Walk(tracePath,
+	err = filepath.Walk(tracePath,
 		func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				return err
 			}
 			if strings.Contains(path, "csv") {
-				paths = append(paths, path)
+				timestamp := ArrivalTimeInSeconds(path)
+				startClock, _ := BuildClock(startClockStr, int64(timestamp-startTimestamp))
+				if !endClock.Before(startClock) {
+					paths = append(paths, path)
+				}
 			}
 			return nil
 		})
@@ -182,9 +189,7 @@ func convertTrace2Workload(tracePath string, workloadPath string) {
 		sortableList.Items = append(sortableList.Items, paths[i])
 	}
 	sortableList.Sort()
-	log.L.Infof("Total number of files in the trace folder: %v", len(paths))
-	startTimestamp, _ := strconv.Atoi(startTimestampTrace)
-	startTimestamp = startTimestamp / MICRO_SECONDS
+	log.L.Infof("Total number of selected files to generate workload: %v", len(paths))
 
 	// Generate json files in parrallel
 
@@ -200,14 +205,11 @@ func convertTrace2Workload(tracePath string, workloadPath string) {
 				return
 			}
 			filePath := string(sortableList.Items[i*workloadSubsetFactor].(string))
-			strs := strings.Split(filePath, "/")
-			fileName := strs[len(strs)-1]
-			strs = strings.Split(fileName, "_")
-			timestamp, _ := strconv.Atoi(strs[0])
-			timestamp = timestamp / 1000000
-			pod, err := ConvertTraceToPod(filePath, "0", nodeCap[0], nodeCap[1], maxTaskLengthSeconds)
-			if err == nil {
-				startClock, _ := BuildClock(startClockStr, int64(timestamp-startTimestamp))
+			timestamp := ArrivalTimeInSeconds(filePath)
+			startClock, _ := BuildClock(startClockStr, int64(timestamp-startTimestamp))
+			maxLength := int(endClock.Sub(startClock).Seconds())
+			pod, err := ConvertTraceToPod(filePath, "0", nodeCap[0], nodeCap[1], maxLength)
+			if err == nil && maxLength > 0 {
 				subWorkload := strconv.Itoa(i / workloadSubfolderCap)
 				WritePodAsJson(*pod, workloadPath+"/"+subWorkload, startClock)
 			}
@@ -215,14 +217,11 @@ func convertTrace2Workload(tracePath string, workloadPath string) {
 	} else {
 		for i := 0; i < fileNum*workloadSubsetFactor; i += workloadSubsetFactor {
 			filePath := string(sortableList.Items[i*workloadSubsetFactor].(string))
-			strs := strings.Split(filePath, "/")
-			fileName := strs[len(strs)-1]
-			strs = strings.Split(fileName, "_")
-			timestamp, _ := strconv.Atoi(strs[0])
-			timestamp = timestamp / 1000000
-			pod, err := ConvertTraceToPod(filePath, "0", nodeCap[0], nodeCap[1], maxTaskLengthSeconds)
-			if err == nil {
-				startClock, _ := BuildClock(startClockStr, int64(timestamp-startTimestamp))
+			timestamp := ArrivalTimeInSeconds(filePath)
+			startClock, _ := BuildClock(startClockStr, int64(timestamp-startTimestamp))
+			maxLength := int(endClock.Sub(startClock).Seconds())
+			pod, err := ConvertTraceToPod(filePath, "0", nodeCap[0], nodeCap[1], maxLength)
+			if err == nil && maxLength > 0 {
 				subWorkload := strconv.Itoa(i / workloadSubfolderCap)
 				WritePodAsJson(*pod, workloadPath+"/"+subWorkload, startClock)
 			}
@@ -278,7 +277,6 @@ func buildScheduler() scheduler.Scheduler {
 	log.L.Infof("trace: %v", tracePath)
 	log.L.Infof("cluster: %s", configPath)
 	log.L.Infof("oversub: %f", globalOverSubFactor)
-	log.L.Infof("maxTaskLengthSeconds: %d", maxTaskLengthSeconds)
 	log.L.Infof("workloadSubsetFactor: %v", workloadSubsetFactor)
 	log.L.Infof("tick: %d", tick)
 	log.L.Infof("start: %v", startClockStr)

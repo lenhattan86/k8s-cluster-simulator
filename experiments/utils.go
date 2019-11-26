@@ -60,6 +60,15 @@ func BuildClock(startClock string, shift int64) (clock.Clock, error) {
 	return clk, nil
 }
 
+func ArrivalTimeInSeconds(filePath string) int {
+	strs := strings.Split(filePath, "/")
+	fileName := strs[len(strs)-1]
+	strs = strings.Split(fileName, "_")
+	timestamp, _ := strconv.Atoi(strs[0])
+	timestamp = timestamp / MICRO_SECONDS
+	return timestamp
+}
+
 func ConvertTraceToPod(csvFile string, startTimestamp string, cpuFactor int, memFactor int, maxTaskLengthSeconds int) (*v1.Pod, error) {
 	// read csv files
 	phases := []int{}
@@ -107,6 +116,12 @@ func ConvertTraceToPod(csvFile string, startTimestamp string, cpuFactor int, mem
 		cpuUsage := int(cpu * float64(cpuFactor))
 		memusage := int(mem * float64(memFactor))
 		phaseLen := (end - start) / MICRO_SECONDS
+		taskLast += phaseLen
+		isStop := false
+		if taskLast > maxTaskLengthSeconds {
+			phaseLen -= (taskLast - maxTaskLengthSeconds)
+			isStop = true
+		}
 		if phaseNum > 0 && cpuUsage == cpuUsages[phaseNum-1] && memusage == memUsages[phaseNum-1] {
 			phases[phaseNum-1] = phases[phaseNum-1] + phaseLen
 		} else {
@@ -115,8 +130,7 @@ func ConvertTraceToPod(csvFile string, startTimestamp string, cpuFactor int, mem
 			phases = append(phases, phaseLen)
 			phaseNum = phaseNum + 1
 		}
-		taskLast += phaseLen
-		if taskLast > maxTaskLengthSeconds {
+		if isStop {
 			break
 		}
 	}

@@ -21,7 +21,7 @@ workloadSubsetFactor=1
 isDebug=true
 workloadSubfolderCap=100000
 start="2019-01-01T00:00:00+09:00"
-end="2019-01-01T10:00:00+09:00"
+end="2019-01-02T00:00:00+09:00"
 startTrace="600000000"
 
 if $isOfficial
@@ -32,9 +32,9 @@ then
     tick=60
     metricsTick=60
 else
-	pathToTrace="/ssd/projects/google-trace-data/tasks"
-    pathToWorkload="/ssd/projects/google-trace-data/workload"
-    log_path="/ssd/projects/google-trace-data"
+	pathToTrace="/ssd/projects/google-trace-data/more-tasks"
+    pathToWorkload="/ssd/projects/google-trace-data/workload4more"
+    log_path="/ssd/projects/google-trace-data/more"
     tick=60
     metricsTick=60
     # path="./gen/"
@@ -59,7 +59,6 @@ runSim(){
     --end="$end" \
     --trace-start="$startTrace" \
     --tick="$tick" \
-    --max-task-length="$maxTaskLengthSeconds" \
     --total-pods-num=$totalPodNumber \
     --subset-factor=$workloadSubsetFactor \
     --workload-subfolder-cap=$workloadSubfolderCap \
@@ -99,7 +98,7 @@ fi
 
 SECONDS=0 
 echo "==================Plotting=================="
-python plotResults.py
+# python plotResults.py
 echo "plotResults.py took $SECONDS seconds"
 echo "==================FINISHED=================="
 date

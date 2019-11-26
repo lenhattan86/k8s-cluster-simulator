@@ -19,9 +19,9 @@ metricsTick: 60
 # The metrics is formatted with the given formatter.
 # Optional (default: not writing metrics)
 metricsLogger:
-- dest: /ssd/projects/google-trace-data/kubesim_generic.log
+- dest: /ssd/projects/google-trace-data/test/kubesim_generic.log
   formatter: JSON
-#- dest: /ssd/projects/google-trace-data/kubesim-hr-generic.log
+#- dest: /ssd/projects/google-trace-data/test/kubesim-hr-generic.log
 #  formatter: humanReadable
 #- dest: stdout
 #  formatter: table
