@@ -15,14 +15,13 @@ nodeNum=5000
 cpuPerNode=64
 memPerNode=128
 
-maxTaskLengthSeconds=18000 # seconds.
-totalPodNumber=600000
+totalPodNumber=25000000
 workloadSubsetFactor=1
 isDebug=true
 workloadSubfolderCap=100000
 start="2019-01-01T00:00:00+09:00"
-end="2019-01-01T10:00:00+09:00"
-startTrace="600000000"
+end="2019-01-01T00:12:00+09:00"
+startTrace="000000000"
 
 if $isOfficial
 then
@@ -32,7 +31,7 @@ then
     tick=60
     metricsTick=60
 else
-	pathToTrace="/ssd/projects/google-trace-data/tasks"
+	pathToTrace="/ssd/projects/google-trace-data/task-res"
     pathToWorkload="/ssd/projects/google-trace-data/workload"
     log_path="/ssd/projects/google-trace-data"
     tick=60
@@ -59,7 +58,6 @@ runSim(){
     --end="$end" \
     --trace-start="$startTrace" \
     --tick="$tick" \
-    --max-task-length="$maxTaskLengthSeconds" \
     --total-pods-num=$totalPodNumber \
     --subset-factor=$workloadSubsetFactor \
     --workload-subfolder-cap=$workloadSubfolderCap \
@@ -83,17 +81,17 @@ then
 else
     echo "running simulation"
 
-    SECONDS=0 
-	runSim $WORST_FIT false false
-    echo "$WORST_FIT took $SECONDS seconds"
+    # SECONDS=0 
+	# runSim $WORST_FIT false false
+    # echo "$WORST_FIT took $SECONDS seconds"
 
-    SECONDS=0 
-    runSim $OVER_SUB false false
-    echo "$OVER_SUB took $SECONDS seconds"
+    # SECONDS=0 
+    # runSim $OVER_SUB false false
+    # echo "$OVER_SUB took $SECONDS seconds"
 
-    SECONDS=0 
-    runSim $ONE_SHOT false false    
-    echo "$ONE_SHOT took $SECONDS seconds"
+    # SECONDS=0 
+    # runSim $ONE_SHOT false false    
+    # echo "$ONE_SHOT took $SECONDS seconds"
 fi
 
 

@@ -113,6 +113,12 @@ func ConvertTraceToPod(csvFile string, startTimestamp string, cpuFactor int, mem
 		end, _ := strconv.Atoi(line[1])
 		cpu, _ := strconv.ParseFloat(line[2], 64)
 		mem, _ := strconv.ParseFloat(line[3], 64)
+
+		// start, _ := strconv.Atoi(line[4])
+		// end, _ := strconv.Atoi(line[2])
+		// cpu, _ := strconv.ParseFloat(line[0], 64)
+		// mem, _ := strconv.ParseFloat(line[3], 64)
+
 		cpuUsage := int(cpu * float64(cpuFactor))
 		memusage := int(mem * float64(memFactor))
 		phaseLen := (end - start) / MICRO_SECONDS

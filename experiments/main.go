@@ -163,6 +163,13 @@ func convertTrace2Workload(tracePath string, workloadPath string) {
 	if err != nil {
 		log.L.Errorf("endClockStr format is not correct, %v", endClockStr)
 	}
+	startClock, err := BuildClock(startClockStr, 0)
+	if err != nil {
+		log.L.Errorf("startClockStr format is not correct, %v", startClockStr)
+	}
+	if endClock.Before(startClock) {
+		log.L.Errorf("startClockStr/endClockStr format is not correct, %v, %v", startClockStr, endClockStr)
+	}
 
 	var paths []string
 	err = filepath.Walk(tracePath,
@@ -172,8 +179,8 @@ func convertTrace2Workload(tracePath string, workloadPath string) {
 			}
 			if strings.Contains(path, "csv") {
 				timestamp := ArrivalTimeInSeconds(path)
-				startClock, _ := BuildClock(startClockStr, int64(timestamp-startTimestamp))
-				if !endClock.Before(startClock) {
+				arrivalClock, _ := BuildClock(startClockStr, int64(timestamp-startTimestamp))
+				if !endClock.Before(arrivalClock) {
 					paths = append(paths, path)
 				}
 			}
@@ -205,7 +212,7 @@ func convertTrace2Workload(tracePath string, workloadPath string) {
 				return
 			}
 			filePath := string(sortableList.Items[i*workloadSubsetFactor].(string))
-			timestamp := ArrivalTimeInSeconds(filePath)
+			timestamp := int(ArrivalTimeInSeconds(filePath)/tick) * tick // rounding
 			startClock, _ := BuildClock(startClockStr, int64(timestamp-startTimestamp))
 			maxLength := int(endClock.Sub(startClock).Seconds())
 			pod, err := ConvertTraceToPod(filePath, "0", nodeCap[0], nodeCap[1], maxLength)
@@ -217,7 +224,7 @@ func convertTrace2Workload(tracePath string, workloadPath string) {
 	} else {
 		for i := 0; i < fileNum*workloadSubsetFactor; i += workloadSubsetFactor {
 			filePath := string(sortableList.Items[i*workloadSubsetFactor].(string))
-			timestamp := ArrivalTimeInSeconds(filePath)
+			timestamp := int(ArrivalTimeInSeconds(filePath)/tick) * tick // rounding
 			startClock, _ := BuildClock(startClockStr, int64(timestamp-startTimestamp))
 			maxLength := int(endClock.Sub(startClock).Seconds())
 			pod, err := ConvertTraceToPod(filePath, "0", nodeCap[0], nodeCap[1], maxLength)
