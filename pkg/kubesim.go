@@ -47,7 +47,7 @@ type KubeSim struct {
 	clock clock.Clock
 
 	nodes       map[string]*node.Node
-	nodeNames   []string //TanLe fixed randomly list nodes.
+	nodeNames   []string //TanLe fixed randomly list nodes.conf
 	pendingPods queue.PodQueue
 	boundPods   map[string]*pod.Pod
 
@@ -175,6 +175,16 @@ func (k *KubeSim) Run(ctx context.Context) error {
 			return ctx.Err()
 		default:
 			log.L.Debugf("Clock %s", k.clock.ToRFC3339())
+
+			c, err := time.Parse(time.RFC3339, "2019-01-01T00:00:00+09:00")
+			clk := clock.NewClock(c)
+			if err != nil {
+				return err
+			}
+			lasted := int(k.clock.Sub(clk).Seconds())
+			if lasted%3600 == 0 {
+				log.L.Infof("Simulation is running @ %v", k.clock.ToRFC3339())
+			}
 
 			if k.submit(met) != nil {
 				return err

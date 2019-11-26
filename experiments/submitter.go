@@ -42,6 +42,8 @@ type mySubmitter struct {
 	endClock     clock.Clock
 }
 
+var totalSimTime = -1
+
 func newMySubmitter(totalPodsNum uint64, endClock clock.Clock) *mySubmitter {
 	return &mySubmitter{
 		podIdx:       0,
@@ -106,7 +108,6 @@ func (s *mySubmitter) Submit(
 	clock clock.Clock,
 	_ algorithm.NodeLister,
 	met metrics.Metrics) ([]submitter.Event, error) {
-	// terminate the simulation before end time
 
 	if s.endClock.Before(clock) {
 		log.L.Infof("=========== Terminate simulation ========== @ %v", clock.ToRFC3339())
