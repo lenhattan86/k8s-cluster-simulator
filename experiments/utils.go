@@ -109,15 +109,23 @@ func ConvertTraceToPod(csvFile string, startTimestamp string, cpuFactor int, mem
 			log.L.Errorf(errMsg)
 			return nil, fmt.Errorf(errMsg)
 		}
-		start, _ := strconv.Atoi(line[0])
-		end, _ := strconv.Atoi(line[1])
-		cpu, _ := strconv.ParseFloat(line[2], 64)
-		mem, _ := strconv.ParseFloat(line[3], 64)
 
-		// start, _ := strconv.Atoi(line[4])
-		// end, _ := strconv.Atoi(line[2])
-		// cpu, _ := strconv.ParseFloat(line[0], 64)
-		// mem, _ := strconv.ParseFloat(line[3], 64)
+		start := 0
+		end := 0
+		cpu := 0.5
+		mem := 0.5
+		check, _ := strconv.Atoi(line[0])
+		if check > 1 {
+			start, _ = strconv.Atoi(line[0])
+			end, _ = strconv.Atoi(line[1])
+			cpu, _ = strconv.ParseFloat(line[2], 64)
+			mem, _ = strconv.ParseFloat(line[3], 64)
+		} else {
+			start, _ = strconv.Atoi(line[4])
+			end, _ = strconv.Atoi(line[2])
+			cpu, _ = strconv.ParseFloat(line[0], 64)
+			mem, _ = strconv.ParseFloat(line[3], 64)
+		}
 
 		cpuUsage := int(cpu * float64(cpuFactor))
 		memusage := int(mem * float64(memFactor))

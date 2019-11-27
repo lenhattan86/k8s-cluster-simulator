@@ -20,7 +20,7 @@ workloadSubsetFactor=1
 isDebug=true
 workloadSubfolderCap=100000
 start="2019-01-01T00:00:00+09:00"
-end="2019-01-01T12:00:00+09:00"
+end="2019-01-01T00:02:00+09:00"
 startTrace="000000000"
 
 if $isOfficial
