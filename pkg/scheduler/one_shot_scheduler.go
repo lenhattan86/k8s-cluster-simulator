@@ -48,8 +48,9 @@ type OneShotScheduler struct {
 
 // NodeMetrics contains node's name & metrics
 type NodeMetrics struct {
-	Name    string
-	Metrics node.Metrics
+	Name        string
+	Usage       v1.ResourceList
+	Allocatable v1.ResourceList
 }
 
 // NewOneShotScheduler creates a new OneShotScheduler.
@@ -164,9 +165,49 @@ var _ = Scheduler(&OneShotScheduler{})
 
 // LowerResourceAvailableNode returns less available resource
 func LowerResourceAvailableNode(nodeMetrics1, nodeMetrics2 interface{}) bool {
-	r1 := util.ResourceListSub(nodeMetrics1.(*NodeMetrics).Metrics.Allocatable, nodeMetrics1.(*NodeMetrics).Metrics.TotalResourceUsage)
-	r2 := util.ResourceListSub(nodeMetrics2.(*NodeMetrics).Metrics.Allocatable, nodeMetrics2.(*NodeMetrics).Metrics.TotalResourceUsage)
+	r1 := util.ResourceListSub(nodeMetrics1.(*NodeMetrics).Allocatable, nodeMetrics1.(*NodeMetrics).Usage)
+	r2 := util.ResourceListSub(nodeMetrics2.(*NodeMetrics).Allocatable, nodeMetrics2.(*NodeMetrics).Usage)
 	return util.ResourceListGE(r2, r1)
+}
+
+func (sched *OneShotScheduler) predict(nodeInfoMap map[string]*nodeinfo.NodeInfo) []*NodeMetrics {
+	monitorMap := sched.monitor(nodeInfoMap)
+	nodeMetricsArray := make([]*NodeMetrics, 0, len(nodeInfoMap))
+	for nodeName := range nodeInfoMap {
+		nodeMetrics := &NodeMetrics{
+			Name:        nodeName,
+			Usage:       GlobalMetrics[metrics.NodesMetricsKey].(map[string]node.Metrics)[nodeName].TotalResourceUsage,
+			Allocatable: GlobalMetrics[metrics.NodesMetricsKey].(map[string]node.Metrics)[nodeName].Allocatable,
+		}
+		nodeMetricsArray = append(nodeMetricsArray, nodeMetrics)
+	}
+	if prevPredictions != nil {
+		for i, metrics := range prevPredictions {
+			if util.ResourceListGE(monitorMap[nodeMetricsArray[i].Name].Usage, metrics.Usage) {
+				m := nodeMetricsArray[i]
+				nodeMetricsArray[i].Usage = util.ResourceListSum(m.Usage, m.Usage)
+			}
+		}
+	}
+
+	prevPredictions = nodeMetricsArray
+
+	return nodeMetricsArray
+}
+
+var prevPredictions []*NodeMetrics
+
+func (sched *OneShotScheduler) monitor(nodeInfoMap map[string]*nodeinfo.NodeInfo) map[string]*NodeMetrics {
+	nodeMetricsMap := make(map[string]*NodeMetrics)
+	for nodeName := range nodeInfoMap {
+		nodeMetrics := &NodeMetrics{
+			Name:        nodeName,
+			Usage:       GlobalMetrics[metrics.NodesMetricsKey].(map[string]node.Metrics)[nodeName].TotalResourceUsage,
+			Allocatable: GlobalMetrics[metrics.NodesMetricsKey].(map[string]node.Metrics)[nodeName].Allocatable,
+		}
+		nodeMetricsMap[nodeName] = nodeMetrics
+	}
+	return nodeMetricsMap
 }
 
 // do one-shot scheduling
@@ -185,14 +226,7 @@ func (sched *OneShotScheduler) scheduleAll(
 	if nodeNum == 0 {
 		return scheduleMap, core.ErrNoNodesAvailable
 	}
-	nodeMetricsArray := make([]*NodeMetrics, 0, nodeNum)
-	for nodeName := range nodeInfoMap {
-		nodeMetrics := &NodeMetrics{
-			Name:    nodeName,
-			Metrics: GlobalMetrics[metrics.NodesMetricsKey].(map[string]node.Metrics)[nodeName],
-		}
-		nodeMetricsArray = append(nodeMetricsArray, nodeMetrics)
-	}
+	nodeMetricsArray := sched.predict(nodeInfoMap)
 
 	// sort pods, sort nodes.
 	sortablePods := kutil.SortableList{CompFunc: kutil.HigherResourceRequest}
@@ -203,13 +237,13 @@ func (sched *OneShotScheduler) scheduleAll(
 
 	for _, pod := range sortablePods.Items {
 		min := kutil.GetResourceRequest(pod.(*v1.Pod))
-		min.Add(nodeMetricsArray[0].Metrics.TotalResourceUsage)
+		min.Add(nodeMetricsArray[0].Usage)
 		host := nodeMetricsArray[0].Name
-		cap := nodeinfo.NewResource(nodeMetricsArray[0].Metrics.Allocatable)
+		cap := nodeinfo.NewResource(nodeMetricsArray[0].Allocatable)
 		idx := 0
 		for i, n := range nodeMetricsArray {
 			temp := kutil.GetResourceRequest(pod.(*v1.Pod))
-			temp.Add(n.Metrics.TotalResourceUsage)
+			temp.Add(n.Usage)
 			// log.L.Infof("min %v temp %v", min, temp)
 			if temp.MilliCPU < min.MilliCPU {
 				min = temp
@@ -225,7 +259,7 @@ func (sched *OneShotScheduler) scheduleAll(
 				FeasibleNodes:  1,
 			}
 			scheduleMap[pod.(*v1.Pod).Name] = result
-			nodeMetricsArray[idx].Metrics.TotalResourceUsage = util.ResourceListSum(nodeMetricsArray[idx].Metrics.TotalResourceUsage, util.PodTotalResourceRequests(pod.(*v1.Pod)))
+			nodeMetricsArray[idx].Usage = util.ResourceListSum(nodeMetricsArray[idx].Usage, util.PodTotalResourceRequests(pod.(*v1.Pod)))
 		}
 	}
 
@@ -467,7 +501,7 @@ func (sched *OneShotScheduler) preempt(
 		}
 	}
 
-	// Clear nomination of pods that previously have nomination.
+	// Clear nomination of pods that ly have nomination.
 	for _, pod := range nominatedPodsToClear {
 		log.L.Tracef("Nomination of pod %v cleared", pod)
 

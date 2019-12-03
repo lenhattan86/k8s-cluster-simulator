@@ -1,7 +1,7 @@
 echo "================== RUNNING=================="
 date
 
-isOfficial=true
+isOfficial=false
 
 BEST_FIT="bestfit"
 OVER_SUB="oversub"
@@ -11,11 +11,11 @@ WORST_FIT="worstfit"
 GENERIC="generic"
 
 oversub=1.5
-nodeNum=5000
+nodeNum=5
 cpuPerNode=64
 memPerNode=128
 
-totalPodNumber=25000000
+totalPodNumber=100
 workloadSubsetFactor=1
 isDebug=true
 workloadSubfolderCap=100000
@@ -32,8 +32,8 @@ then
     metricsTick=60
 else
 	pathToTrace="/ssd/projects/google-trace-data/task-res"
-    pathToWorkload="/ssd/projects/google-trace-data/workload"
-    log_path="/ssd/projects/google-trace-data"
+    pathToWorkload="./workload"
+    log_path="./log"
     tick=60
     metricsTick=60
     # path="./gen/"
@@ -65,7 +65,7 @@ runSim(){
 }
 #rm -rf *.out
 SECONDS=0
-runSim $GENERIC true true
+runSim $GENERIC true false
 echo "Generating workload took $SECONDS seconds"
 
 
@@ -89,15 +89,15 @@ else
     # runSim $OVER_SUB false false
     # echo "$OVER_SUB took $SECONDS seconds"
 
-    # SECONDS=0 
-    # runSim $ONE_SHOT false false    
-    # echo "$ONE_SHOT took $SECONDS seconds"
+    SECONDS=0 
+    runSim $ONE_SHOT false false    
+    echo "$ONE_SHOT took $SECONDS seconds"
 fi
 
 
 SECONDS=0 
 echo "==================Plotting=================="
-python plotResults.py
+python3 plotResults.py
 echo "plotResults.py took $SECONDS seconds"
 echo "==================FINISHED=================="
 date

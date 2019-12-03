@@ -25,9 +25,9 @@ startTrace="000000000"
 
 if $isOfficial
 then
-    pathToTrace="/dev/tan/ResourceAllocation/parse/results/tasks-res"
-    pathToWorkload="/proj/yarnrm-PG0/google-trace-data/workload"
-    log_path="/proj/yarnrm-PG0/google-trace-data"
+    pathToTrace="/proj/yarnrm-PG0/google-data/tasks"
+    pathToWorkload="/dev/results/workload"
+    log_path="/dev/results"
     tick=60
     metricsTick=60
 else
