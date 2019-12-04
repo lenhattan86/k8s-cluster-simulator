@@ -14,12 +14,22 @@ from common import *
 from utils import *
 from data_utils import *
 
-cpuStr = 'cpu'
+tick = 1
+## plot utilization: number of busy nodes.
+cap = 64
 
+cpuStr = 'cpu'
 show=False
-loads = [False, False, False, False, False, True, False]
-plots = [True, False, False]
-path = "/ssd/projects/google-trace-data"
+plotObj = True
+plotOverload = True
+plotRequest = True
+loads = [False, False, False, plotOverload, False, plotObj, plotRequest]
+
+path = "./log"
+arg_len = len(sys.argv) - 1
+if arg_len > 0:
+    path=sys.argv[1]
+
 # path = "./"
 line_num = 60*24
 def loadLog(filepath) :
@@ -149,12 +159,9 @@ for m in methods:
 
 ############# PLOTTING ##############
 
-tick = 1
-## plot utilization: number of busy nodes.
-cap = 64
-if(plots[0]):
-    Y_MAX = cap*1.5
-    fig_util = plt.figure(figsize=FIG_ONE_COL)
+if plotObj:
+    # Y_MAX = cap*1.5
+    fig = plt.figure(figsize=FIG_ONE_COL)
     max_len = 0
     for i in range(methodsNum):
         plt.plot(range(0,len(maxCpuUsages[i])*tick,tick), maxCpuUsages[i])
@@ -168,52 +175,38 @@ if(plots[0]):
     plt.xlabel('time (minutes)')
     plt.ylabel(STR_CPU_CORES)
     plt.suptitle("Max Cpu Usage")
-    plt.ylim(0,Y_MAX)
+    # plt.ylim(0,Y_MAX)
 
-    fig_util.savefig(FIG_PATH+"/util.pdf", bbox_inches='tight')
+    fig.savefig(FIG_PATH+"/max_cpu_usage.pdf", bbox_inches='tight')
 
-if False:
-    Y_MAX = cap*20
-    fig_util = plt.figure(figsize=FIG_ONE_COL)
+if plotRequest:
+    # Y_MAX = np.amax(cpuRequests)
+    fig = plt.figure(figsize=FIG_ONE_COL)
     for i in range(methodsNum):
         plt.plot(range(0,len(cpuRequests[i])*tick,tick), cpuRequests[i])
     
     plt.legend(methods, loc='best')
-    plt.xlabel(STR_TIME_MINS)
+    plt.xlabel(STR_TIME_MIN)
     plt.ylabel(STR_CPU_CORES)
-    plt.ylim(0,Y_MAX)
+    # plt.ylim(0,Y_MAX)
     plt.suptitle("Total Cpu Request")
 
-    fig_util.savefig(FIG_PATH+"/request.pdf", bbox_inches='tight')
+    fig.savefig(FIG_PATH+"/request.pdf", bbox_inches='tight')
 
 ## plot performance: number of overload nodes.
-if False:
-    fig_perform = plt.figure(figsize=FIG_ONE_COL)
-    for i in range(methodsNum):
-        plt.plot(range(0,len(maxCpuUsages[i])*tick,tick), maxCpuUsages[i])
-
-    plt.legend(methods, loc='best')
-    plt.xlabel(STR_TIME_MINS)
-    plt.ylabel(STR_NODES)
-    plt.suptitle("Overload")
-    # plt.ylim(0,Y_MAX)
-
-    fig_util.savefig(FIG_PATH+"/perf.pdf", bbox_inches='tight')
-    
-## plot performance: number of overload nodes.
-if False:
-    fig_overbook = plt.figure(figsize=FIG_ONE_COL)
+if plotOverload:
+    fig = plt.figure(figsize=FIG_ONE_COL)
     for i in range(methodsNum):
         plt.plot(range(0,len(overloadNodes[i])*tick,tick), overloadNodes[i])
 
     plt.legend(methods, loc='best')
-    plt.xlabel(STR_TIME_MINS)
+    plt.xlabel(STR_TIME_MIN)
     plt.ylabel(STR_NODES)
-    plt.suptitle("Overbook")
+    plt.suptitle("Overload")
     # plt.ylim(0,Y_MAX)
 
-    fig_util.savefig(FIG_PATH+"/overbook.pdf", bbox_inches='tight')
-
+    fig.savefig(FIG_PATH+"/overload.pdf", bbox_inches='tight')
+    
 ## show figures
 if show:
     plt.show()

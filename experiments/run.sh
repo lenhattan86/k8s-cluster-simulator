@@ -20,26 +20,33 @@ workloadSubsetFactor=1
 isDebug=true
 workloadSubfolderCap=100000
 start="2019-01-01T00:00:00+09:00"
-end="2019-01-01T00:02:00+09:00"
+end="2019-01-01T05:00:00+09:00"
 startTrace="000000000"
+targetNum=0
 
 if $isOfficial
 then
-    pathToTrace="/proj/yarnrm-PG0/google-data/tasks"
-    pathToWorkload="/dev/results/workload"
-    log_path="/dev/results"
+    nodeNum=5000
+    totalPodNumber=25000000
+    start="2019-01-01T00:00:00+09:00"
+    end="2019-01-01T12:00:00+09:00"
+    pathToTrace="/dev/tan/ResourceAllocation/parse/results/tasks-res"
+    pathToWorkload="/proj/yarnrm-PG0/google-trace-data/workload"
+    log_path="/proj/yarnrm-PG0/google-trace-data"
     tick=60
     metricsTick=60
 else
+    echo reach here.
+	nodeNum=5
+    totalPodNumber=100
+    targetNum=64
+    start="2019-01-01T00:00:00+09:00"
+    end="2019-01-01T00:30:00+09:00"
 	pathToTrace="/ssd/projects/google-trace-data/task-res"
-    pathToWorkload="/ssd/projects/google-trace-data/workload"
-    log_path="/ssd/projects/google-trace-data"
-    tick=60
-    metricsTick=60
-    # path="./gen/"
-    # log_path="./gen/"
-    # tick=1
-    # metricsTick=1
+    pathToWorkload="./tmp/workload"
+    log_path="./log"
+    tick=1
+    metricsTick=1
 fi
 
 mkdir $pathToWorkload
@@ -59,13 +66,14 @@ runSim(){
     --trace-start="$startTrace" \
     --tick="$tick" \
     --total-pods-num=$totalPodNumber \
+    --target-pod-num=$targetNum \
     --subset-factor=$workloadSubsetFactor \
     --workload-subfolder-cap=$workloadSubfolderCap \
     &> run_${1}.out
 }
 #rm -rf *.out
 SECONDS=0
-runSim $GENERIC true true
+runSim $GENERIC true false
 echo "Generating workload took $SECONDS seconds"
 
 
@@ -97,7 +105,7 @@ fi
 
 SECONDS=0 
 echo "==================Plotting=================="
-python plotResults.py
+python3 plotResults.py $log_path
 echo "plotResults.py took $SECONDS seconds"
 echo "==================FINISHED=================="
 date

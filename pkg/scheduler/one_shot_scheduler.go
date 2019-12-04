@@ -170,9 +170,11 @@ func LowerResourceAvailableNode(nodeMetrics1, nodeMetrics2 interface{}) bool {
 	return util.ResourceListGE(r2, r1)
 }
 
-func (sched *OneShotScheduler) predict(nodeInfoMap map[string]*nodeinfo.NodeInfo) []*NodeMetrics {
+func (sched *OneShotScheduler) estimate(nodeInfoMap map[string]*nodeinfo.NodeInfo) []*NodeMetrics {
 	monitorMap := sched.monitor(nodeInfoMap)
 	nodeMetricsArray := make([]*NodeMetrics, 0, len(nodeInfoMap))
+
+	// predict.
 	for nodeName := range nodeInfoMap {
 		nodeMetrics := &NodeMetrics{
 			Name:        nodeName,
@@ -181,9 +183,11 @@ func (sched *OneShotScheduler) predict(nodeInfoMap map[string]*nodeinfo.NodeInfo
 		}
 		nodeMetricsArray = append(nodeMetricsArray, nodeMetrics)
 	}
+
+	// react to prediction errors.
 	if prevPredictions != nil {
 		for i, metrics := range prevPredictions {
-			if util.ResourceListGE(monitorMap[nodeMetricsArray[i].Name].Usage, metrics.Usage) {
+			if util.ResourceListGE(monitorMap[prevPredictions[i].Name].Usage, metrics.Usage) {
 				m := nodeMetricsArray[i]
 				nodeMetricsArray[i].Usage = util.ResourceListSum(m.Usage, m.Usage)
 			}
@@ -226,7 +230,7 @@ func (sched *OneShotScheduler) scheduleAll(
 	if nodeNum == 0 {
 		return scheduleMap, core.ErrNoNodesAvailable
 	}
-	nodeMetricsArray := sched.predict(nodeInfoMap)
+	nodeMetricsArray := sched.estimate(nodeInfoMap)
 
 	// sort pods, sort nodes.
 	sortablePods := kutil.SortableList{CompFunc: kutil.HigherResourceRequest}

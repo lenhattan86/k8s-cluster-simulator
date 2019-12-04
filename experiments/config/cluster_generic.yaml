@@ -4,7 +4,7 @@ logLevel: info
 
 # Interval duration for scheduling and updating the cluster, in seconds.
 # Optional (default: 10)
-tick: 60
+tick: 1
 
 # Start time at which the simulation starts, in RFC3339 format.
 # Optional (default: now)
@@ -12,7 +12,7 @@ startClock: 2019-01-01T00:00:00+09:00
 
 # Interval duration for logging metrics of the cluster, in seconds.
 # Optional (default: same as tick)
-metricsTick: 60
+metricsTick: 1
 
 # Metrics of simulated kubernetes cluster is written
 # to standard out, standard error or files at given paths.
@@ -23,8 +23,8 @@ metricsLogger:
   formatter: JSON
 #- dest: ./log/kubesim-hr-generic.log
 #  formatter: humanReadable
-#- dest: stdout
-#  formatter: table
+- dest: stdout
+  formatter: table
 
 # Write configuration of each node.
 cluster:

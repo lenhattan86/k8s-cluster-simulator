@@ -112,6 +112,8 @@ func init() {
 	rootCmd.PersistentFlags().Uint64Var(
 		&totalPodsNum, "total-pods-num", 1, "totalPodsNum")
 	rootCmd.PersistentFlags().IntVar(
+		&targetNum, "target-pod-num", 10, "target pod num per time slot")
+	rootCmd.PersistentFlags().IntVar(
 		&workloadSubsetFactor, "subset-factor", 1, "subset factor of workload trace")
 	rootCmd.PersistentFlags().IntVar(
 		&workloadSubfolderCap, "workload-subfolder-cap", 10000, "number of pods/jobs per folder")
@@ -248,7 +250,7 @@ func buildScheduler() scheduler.Scheduler {
 		}
 	}
 
-	totalPodsNum = 0
+	count := uint64(0)
 	err := filepath.Walk(workloadPath,
 		func(path string, info os.FileInfo, err error) error {
 			if err != nil {
@@ -266,15 +268,17 @@ func buildScheduler() scheduler.Scheduler {
 					strArr := []string{path}
 					podMap[clockStr] = strArr
 				}
-				totalPodsNum++
+				count++
 			}
 			return nil
 		})
 	if err != nil {
 		log.L.Println(err)
 	}
-
-	log.L.Infof("Total number of pods in the workload folder: %v", totalPodsNum)
+	if !isGenWorkload {
+		totalPodsNum = count
+		log.L.Infof("Total number of pods in the workload folder: %v", totalPodsNum)
+	}
 
 	log.L.Infof("scheduler input %s", schedulerName)
 	log.L.Infof("Submitting %d pods", totalPodsNum)

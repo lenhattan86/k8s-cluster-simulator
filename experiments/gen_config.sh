@@ -35,8 +35,8 @@ metricsLogger:
   formatter: JSON
 #- dest: $log_path/kubesim-hr-${scheduler}.log
 #  formatter: humanReadable
-#- dest: stdout
-#  formatter: table
+- dest: stdout
+  formatter: table
 
 # Write configuration of each node.
 cluster:
