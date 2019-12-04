@@ -147,3 +147,6 @@ tmp/
 
 # vscode
 .vscode/
+
+# gen files
+experiments/tmp/
