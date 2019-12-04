@@ -15,12 +15,9 @@ nodeNum=5000
 cpuPerNode=64
 memPerNode=128
 
-totalPodNumber=25000000
 workloadSubsetFactor=1
 isDebug=true
 workloadSubfolderCap=100000
-start="2019-01-01T00:00:00+09:00"
-end="2019-01-01T05:00:00+09:00"
 startTrace="000000000"
 targetNum=0
 
@@ -29,10 +26,10 @@ then
     nodeNum=5000
     totalPodNumber=25000000
     start="2019-01-01T00:00:00+09:00"
-    end="2019-01-01T12:00:00+09:00"
-    pathToTrace="/dev/tan/ResourceAllocation/parse/results/tasks-res"
-    pathToWorkload="/proj/yarnrm-PG0/google-trace-data/workload"
-    log_path="/proj/yarnrm-PG0/google-trace-data"
+    end="2019-01-01T05:00:00+09:00"
+    pathToTrace="/home/cc/google-data/tasks/tasks-res"
+    pathToWorkload="/home/cc/google-data/workload"
+    log_path="/home/cc/google-data/log"
     tick=60
     metricsTick=60
 else
