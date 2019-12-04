@@ -33,7 +33,6 @@ then
     tick=60
     metricsTick=60
 else
-    echo reach here.
 	nodeNum=5
     totalPodNumber=100
     targetNum=64

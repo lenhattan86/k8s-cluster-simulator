@@ -126,6 +126,9 @@ func ConvertTraceToPod(csvFile string, startTimestamp string, cpuFactor int, mem
 			cpu, _ = strconv.ParseFloat(line[0], 64)
 			mem, _ = strconv.ParseFloat(line[3], 64)
 		}
+		if cpu > 1 || mem > 1 {
+			log.L.Errorf("task %v's resource requests are too large cpu=%v mem=%v", csvFile, cpu, mem)
+		}
 
 		cpuUsage := int(cpu * float64(cpuFactor))
 		memusage := int(mem * float64(memFactor))

@@ -158,6 +158,8 @@ for m in methods:
     cpuRequests.append(ur)
 
 ############# PLOTTING ##############
+if not os.path.exists(FIG_PATH):
+    os.makedirs(FIG_PATH)
 
 if plotObj:
     # Y_MAX = cap*1.5
