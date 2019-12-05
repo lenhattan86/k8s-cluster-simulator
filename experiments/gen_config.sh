@@ -33,10 +33,10 @@ metricsTick: $metricsTick
 metricsLogger:
 - dest: $log_path/$log_file
   formatter: JSON
-#- dest: $log_path/kubesim-hr-${scheduler}.log
-#  formatter: humanReadable
-- dest: stdout
-  formatter: table
+# - dest: $log_path/kubesim-hr-${scheduler}.log
+#   formatter: humanReadable
+# - dest: stdout
+#   formatter: table
 
 # Write configuration of each node.
 cluster:
