@@ -23,7 +23,8 @@ show=False
 plotObj = True
 plotOverload = True
 plotRequest = True
-loads = [False, False, False, plotOverload, False, plotObj, plotRequest]
+plotOverbook = True
+loads = [False, False, False, plotOverload, plotOverbook, plotObj, plotRequest]
 
 path = "./log"
 arg_len = len(sys.argv) - 1
@@ -208,6 +209,20 @@ if plotOverload:
     # plt.ylim(0,Y_MAX)
 
     fig.savefig(FIG_PATH+"/overload.pdf", bbox_inches='tight')
+
+## plot performance: number of overload nodes.
+if plotOverbook:
+    fig = plt.figure(figsize=FIG_ONE_COL)
+    for i in range(methodsNum):
+        plt.plot(range(0,len(overbookNodes[i])*tick,tick), overbookNodes[i])
+
+    plt.legend(methods, loc='best')
+    plt.xlabel(STR_TIME_MIN)
+    plt.ylabel(STR_NODES)
+    plt.suptitle("Overbook")
+    # plt.ylim(0,Y_MAX)
+
+    fig.savefig(FIG_PATH+"/overbook.pdf", bbox_inches='tight')
     
 ## show figures
 if show:

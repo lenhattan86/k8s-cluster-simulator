@@ -33,12 +33,12 @@ then
     tick=60
     metricsTick=60
 else
-	nodeNum=5
+    nodeNum=5
     totalPodNumber=100
     targetNum=64
     start="2019-01-01T00:00:00+09:00"
     end="2019-01-01T00:30:00+09:00"
-	pathToTrace="/ssd/projects/google-trace-data/task-res"
+    pathToTrace="/ssd/projects/google-trace-data/task-res"
     pathToWorkload="./tmp/workload"
     log_path="./log"
     tick=1

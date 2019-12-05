@@ -97,6 +97,8 @@ func ConvertTraceToPod(csvFile string, startTimestamp string, cpuFactor int, mem
 	}
 	// read the rest
 	phaseNum := 0
+	cpu := 0.0
+	mem := 0.0
 	for {
 		line, err := r.Read()
 		// log.L.Infof("%v", line)
@@ -112,24 +114,29 @@ func ConvertTraceToPod(csvFile string, startTimestamp string, cpuFactor int, mem
 
 		start := 0
 		end := 0
-		cpu := 0.5
-		mem := 0.5
-		check, _ := strconv.Atoi(line[0])
+		check, _ := strconv.Atoi(line[1])
+		c := 0.0
+		m := 0.0
 		if check > 1 {
 			start, _ = strconv.Atoi(line[0])
 			end, _ = strconv.Atoi(line[1])
-			cpu, _ = strconv.ParseFloat(line[2], 64)
-			mem, _ = strconv.ParseFloat(line[3], 64)
+			c, _ = strconv.ParseFloat(line[2], 64)
+			m, _ = strconv.ParseFloat(line[3], 64)
 		} else {
 			start, _ = strconv.Atoi(line[4])
 			end, _ = strconv.Atoi(line[2])
-			cpu, _ = strconv.ParseFloat(line[0], 64)
-			mem, _ = strconv.ParseFloat(line[3], 64)
+			c, _ = strconv.ParseFloat(line[0], 64)
+			m, _ = strconv.ParseFloat(line[3], 64)
 		}
-		if cpu > 1 || mem > 1 {
-			log.L.Errorf("task %v's resource demands are too large cpu=%v mem=%v", csvFile, cpu, mem)
-			cpu = 1
-			mem = 1
+		if c > 1 {
+			log.L.Errorf("task %v's resource demands are too large cpu=%v mem=%v", csvFile, c, m)
+		} else {
+			cpu = c
+		}
+		if m > 1 {
+			log.L.Errorf("task %v's resource demands are too large cpu=%v mem=%v", csvFile, c, m)
+		} else {
+			mem = m
 		}
 
 		cpuUsage := int(cpu * float64(cpuFactor))
