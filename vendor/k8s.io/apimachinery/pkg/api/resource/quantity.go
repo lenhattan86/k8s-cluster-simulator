@@ -544,6 +544,12 @@ func (q *Quantity) Add(y Quantity) {
 	q.ToDec().d.Dec.Add(q.d.Dec, y.AsDec())
 }
 
+func (q *Quantity) Multiply(factor float32) {
+	q.s = ""
+	c := int64(float32(q.i.value) * factor)
+	q.i.value = c
+}
+
 // Sub subtracts the provided quantity from the current value in place. If the current
 // value is zero, the format of the quantity will be updated to the format of y.
 func (q *Quantity) Sub(y Quantity) {

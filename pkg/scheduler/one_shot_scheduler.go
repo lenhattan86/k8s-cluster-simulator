@@ -38,13 +38,18 @@ import (
 
 // OneShotScheduler makes scheduling decision for each given pod in the one-by-one manner and pick the busiest pod first.
 type OneShotScheduler struct {
-	extenders    []Extender
-	predicates   map[string]predicates.FitPredicate
-	prioritizers []priorities.PriorityConfig
+	extenders       []Extender
+	predicates      map[string]predicates.FitPredicate
+	penaltyMap      map[string]float32
+	penaltyTiming   map[string]int
+	prioritizers    []priorities.PriorityConfig
+	prevPredictions []*NodeMetrics
 
 	lastNodeIndex     uint64
 	preemptionEnabled bool
 }
+
+const TIME_OUT = 10
 
 // NodeMetrics contains node's name & metrics
 type NodeMetrics struct {
@@ -58,6 +63,8 @@ func NewOneShotScheduler(preeptionEnabled bool) OneShotScheduler {
 	return OneShotScheduler{
 		predicates:        map[string]predicates.FitPredicate{},
 		preemptionEnabled: preeptionEnabled,
+		penaltyMap:        make(map[string]float32),
+		penaltyTiming:     make(map[string]int),
 	}
 }
 
@@ -171,9 +178,8 @@ func LowerResourceAvailableNode(nodeMetrics1, nodeMetrics2 interface{}) bool {
 }
 
 func (sched *OneShotScheduler) estimate(nodeInfoMap map[string]*nodeinfo.NodeInfo) []*NodeMetrics {
-	monitorMap := sched.monitor(nodeInfoMap)
+	// monitorMap := sched.monitor(nodeInfoMap)
 	nodeMetricsArray := make([]*NodeMetrics, 0, len(nodeInfoMap))
-
 	// predict.
 	for nodeName := range nodeInfoMap {
 		nodeMetrics := &NodeMetrics{
@@ -182,24 +188,32 @@ func (sched *OneShotScheduler) estimate(nodeInfoMap map[string]*nodeinfo.NodeInf
 			Allocatable: GlobalMetrics[metrics.NodesMetricsKey].(map[string]node.Metrics)[nodeName].Allocatable,
 		}
 		nodeMetricsArray = append(nodeMetricsArray, nodeMetrics)
-	}
-
-	// react to prediction errors.
-	if prevPredictions != nil {
-		for i, metrics := range prevPredictions {
-			if util.ResourceListGE(monitorMap[prevPredictions[i].Name].Usage, metrics.Usage) {
-				m := nodeMetricsArray[i]
-				nodeMetricsArray[i].Usage = util.ResourceListSum(m.Usage, m.Usage)
-			}
+		if _, ok := sched.penaltyMap[nodeName]; !ok {
+			sched.penaltyMap[nodeName] = 1.0
 		}
 	}
 
-	prevPredictions = nodeMetricsArray
+	// react to prediction errors.
+	if sched.prevPredictions != nil {
+		for i, p := range sched.prevPredictions {
+			m := nodeMetricsArray[i]
+			if !util.ResourceListGE(p.Usage, m.Usage) {
+				sched.penaltyMap[m.Name] = sched.penaltyMap[m.Name] * 1.1
+				sched.penaltyTiming[m.Name] = 0
+			} else if util.ResourceListLE(p.Usage, m.Usage) {
+				sched.penaltyTiming[m.Name]++
+				if sched.penaltyTiming[m.Name] >= TIME_OUT {
+					sched.penaltyMap[m.Name] = 1.0
+				}
+			}
+			nodeMetricsArray[i].Usage = util.ResourceListMultiply(m.Usage, sched.penaltyMap[m.Name])
+		}
+	}
+
+	sched.prevPredictions = nodeMetricsArray
 
 	return nodeMetricsArray
 }
-
-var prevPredictions []*NodeMetrics
 
 func (sched *OneShotScheduler) monitor(nodeInfoMap map[string]*nodeinfo.NodeInfo) map[string]*NodeMetrics {
 	nodeMetricsMap := make(map[string]*NodeMetrics)
@@ -240,29 +254,34 @@ func (sched *OneShotScheduler) scheduleAll(
 	sortablePods.Sort()
 
 	for _, pod := range sortablePods.Items {
+		// init min value
 		min := kutil.GetResourceRequest(pod.(*v1.Pod))
 		min.Add(nodeMetricsArray[0].Usage)
 		host := nodeMetricsArray[0].Name
 		cap := nodeinfo.NewResource(nodeMetricsArray[0].Allocatable)
 		idx := 0
+
+		// search for min
 		for i, n := range nodeMetricsArray {
 			temp := kutil.GetResourceRequest(pod.(*v1.Pod))
 			temp.Add(n.Usage)
 			// log.L.Infof("min %v temp %v", min, temp)
-			if temp.MilliCPU < min.MilliCPU {
+			if temp.MilliCPU < min.MilliCPU && temp.Memory < min.Memory {
 				min = temp
 				host = n.Name
 				idx = i
+				cap = nodeinfo.NewResource(n.Allocatable)
 			}
 		}
 
-		if min.MilliCPU <= cap.MilliCPU {
+		if min.MilliCPU <= cap.MilliCPU && min.Memory <= cap.Memory {
 			result := core.ScheduleResult{
 				SuggestedHost:  host,
 				EvaluatedNodes: nodeNum,
 				FeasibleNodes:  1,
 			}
 			scheduleMap[pod.(*v1.Pod).Name] = result
+			// update resource usage
 			nodeMetricsArray[idx].Usage = util.ResourceListSum(nodeMetricsArray[idx].Usage, util.PodTotalResourceRequests(pod.(*v1.Pod)))
 		}
 	}

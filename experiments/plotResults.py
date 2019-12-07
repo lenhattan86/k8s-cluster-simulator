@@ -137,8 +137,8 @@ def formatQuatity(str):
 
     return val
 
-methods = ["oneshot","worstfit","oversub"]
-# methods = {"oneshot","worstfit"}
+# methods = ["oneshot","worstfit","oversub"]
+methods = ["oneshot","worstfit"]
 methodsNum = len(methods)
 busyNodes = []
 overloadNodes = []

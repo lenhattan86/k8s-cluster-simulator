@@ -64,6 +64,15 @@ func ResourceListSum(r1, r2 v1.ResourceList) v1.ResourceList {
 	return sum
 }
 
+func ResourceListMultiply(r1 v1.ResourceList, factor float32) v1.ResourceList {
+	res := r1.DeepCopy()
+	for r1Key, r1Val := range r1 {
+		r1Val.Multiply(factor)
+		res[r1Key] = r1Val
+	}
+	return res
+}
+
 // ResourceListSub returns the substraction r1-r2
 func ResourceListSub(r1, r2 v1.ResourceList) v1.ResourceList {
 	sum := r1.DeepCopy()
@@ -84,6 +93,17 @@ func ResourceListGE(r1, r2 v1.ResourceList) bool {
 		if r1Val, ok := r1[r2Key]; !ok {
 			return false
 		} else if r1Val.Cmp(r2Val) < 0 {
+			return false
+		}
+	}
+	return true
+}
+
+func ResourceListLE(r1, r2 v1.ResourceList) bool {
+	for r2Key, r2Val := range r2 {
+		if r1Val, ok := r1[r2Key]; !ok {
+			return false
+		} else if r1Val.Cmp(r2Val) > 0 {
 			return false
 		}
 	}

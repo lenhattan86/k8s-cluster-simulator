@@ -21,10 +21,10 @@ metricsTick: 1
 metricsLogger:
 - dest: ./log/kubesim_generic.log
   formatter: JSON
-#- dest: ./log/kubesim-hr-generic.log
-#  formatter: humanReadable
-- dest: stdout
-  formatter: table
+# - dest: ./log/kubesim-hr-generic.log
+#   formatter: humanReadable
+# - dest: stdout
+#   formatter: table
 
 # Write configuration of each node.
 cluster:
@@ -32,86 +32,6 @@ cluster:
 
 - metadata:
     name: node-1
-    labels:
-      beta.kubernetes.io/os: simulated
-    annotations:
-      foo: bar
-  spec:
-    unschedulable: false
-    # taints:
-    # - key: k
-    #   value: v
-    #   effect: NoSchedule
-  status:
-    allocatable:
-      cpu: 64
-      memory: 128Gi
-      nvidia.com/gpu: 0
-      pods: 99999
-
-
-- metadata:
-    name: node-2
-    labels:
-      beta.kubernetes.io/os: simulated
-    annotations:
-      foo: bar
-  spec:
-    unschedulable: false
-    # taints:
-    # - key: k
-    #   value: v
-    #   effect: NoSchedule
-  status:
-    allocatable:
-      cpu: 64
-      memory: 128Gi
-      nvidia.com/gpu: 0
-      pods: 99999
-
-
-- metadata:
-    name: node-3
-    labels:
-      beta.kubernetes.io/os: simulated
-    annotations:
-      foo: bar
-  spec:
-    unschedulable: false
-    # taints:
-    # - key: k
-    #   value: v
-    #   effect: NoSchedule
-  status:
-    allocatable:
-      cpu: 64
-      memory: 128Gi
-      nvidia.com/gpu: 0
-      pods: 99999
-
-
-- metadata:
-    name: node-4
-    labels:
-      beta.kubernetes.io/os: simulated
-    annotations:
-      foo: bar
-  spec:
-    unschedulable: false
-    # taints:
-    # - key: k
-    #   value: v
-    #   effect: NoSchedule
-  status:
-    allocatable:
-      cpu: 64
-      memory: 128Gi
-      nvidia.com/gpu: 0
-      pods: 99999
-
-
-- metadata:
-    name: node-5
     labels:
       beta.kubernetes.io/os: simulated
     annotations:
