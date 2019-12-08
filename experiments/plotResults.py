@@ -22,9 +22,10 @@ cpuStr = 'cpu'
 show=False
 plotObj = True
 plotOverload = True
-plotRequest = True
+plotTotalRequest = True
+plotTotalUsage = True
 plotOverbook = True
-loads = [False, False, False, plotOverload, plotOverbook, plotObj, plotRequest]
+loads = [plotTotalUsage, False, False, plotOverload, plotOverbook, plotObj, plotTotalRequest]
 
 path = "./log"
 arg_len = len(sys.argv) - 1
@@ -182,7 +183,7 @@ if plotObj:
 
     fig.savefig(FIG_PATH+"/max_cpu_usage.pdf", bbox_inches='tight')
 
-if plotRequest:
+if plotTotalRequest:
     # Y_MAX = np.amax(cpuRequests)
     fig = plt.figure(figsize=FIG_ONE_COL)
     for i in range(methodsNum):
@@ -194,7 +195,21 @@ if plotRequest:
     # plt.ylim(0,Y_MAX)
     plt.suptitle("Total Cpu Request")
 
-    fig.savefig(FIG_PATH+"/request.pdf", bbox_inches='tight')
+    fig.savefig(FIG_PATH+"/total-request.pdf", bbox_inches='tight')
+
+if plotTotalUsage:
+    # Y_MAX = np.amax(cpuRequests)
+    fig = plt.figure(figsize=FIG_ONE_COL)
+    for i in range(methodsNum):
+        plt.plot(range(0,len(cpuUsages[i])*tick,tick), cpuUsages[i])
+    
+    plt.legend(methods, loc='best')
+    plt.xlabel(STR_TIME_MIN)
+    plt.ylabel(STR_CPU_CORES)
+    # plt.ylim(0,Y_MAX)
+    plt.suptitle("Total Cpu Usage")
+
+    fig.savefig(FIG_PATH+"/total-usage.pdf", bbox_inches='tight')
 
 ## plot performance: number of overload nodes.
 if plotOverload:
