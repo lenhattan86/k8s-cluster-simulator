@@ -126,7 +126,7 @@ func (sched *OneShotScheduler) Schedule(
 			if err == queue.ErrEmptyQueue {
 				break
 			} else {
-				return []Event{}, errors.New("Unexpected error raised by Queueu.Pop()")
+				return []Event{}, errors.New("Unexpected error raised by Queue.Pop()")
 			}
 		}
 
@@ -199,12 +199,14 @@ func (sched *OneShotScheduler) estimate(nodeInfoMap map[string]*nodeinfo.NodeInf
 			m := nodeMetricsArray[i]
 			if !util.ResourceListGE(p.Usage, m.Usage) {
 				sched.penaltyMap[m.Name] = sched.penaltyMap[m.Name] * 1.1
-				sched.penaltyTiming[m.Name] = 0
-			} else if util.ResourceListLE(p.Usage, m.Usage) {
+				sched.penaltyTiming[m.Name] = 0.0
+			} else if util.ResourceListGE(p.Usage, m.Usage) {
 				sched.penaltyTiming[m.Name]++
 				if sched.penaltyTiming[m.Name] >= TIME_OUT {
 					sched.penaltyMap[m.Name] = 1.0
 				}
+			} else {
+				sched.penaltyTiming[m.Name] = 0.0
 			}
 			nodeMetricsArray[i].Usage = util.ResourceListMultiply(m.Usage, sched.penaltyMap[m.Name])
 		}

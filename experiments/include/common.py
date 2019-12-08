@@ -4,7 +4,7 @@
 ## figures
 FIG_PATH="./figs"
 
-FIG_ONE_COL = (4,3)
+FIG_ONE_COL = (8,6)
 FIG_HALF_COL = (2.5,2)
 FIG_2_3rd_COL = (4,3)
 
