@@ -25,7 +25,7 @@ plotOverload = True
 plotTotalRequest = True
 plotTotalUsage = True
 plotOverbook = True
-loads = [plotTotalUsage, False, False, plotOverload, plotOverbook, plotObj, plotTotalRequest]
+loads = [plotTotalUsage, True, False, plotOverload, plotOverbook, plotObj, plotTotalRequest]
 
 path = "./log"
 arg_len = len(sys.argv) - 1
@@ -188,8 +188,12 @@ if plotTotalRequest:
     fig = plt.figure(figsize=FIG_ONE_COL)
     for i in range(methodsNum):
         plt.plot(range(0,len(cpuRequests[i])*tick,tick), cpuRequests[i])
-    
-    plt.legend(methods, loc='best')
+
+    plt.plot(range(0,len(cpuAllocatables[0])*tick,tick), cpuAllocatables[0])
+    legends = methods
+    legends.append('capacity')
+
+    plt.legend(legends, loc='best')
     plt.xlabel(STR_TIME_MIN)
     plt.ylabel(STR_CPU_CORES)
     # plt.ylim(0,Y_MAX)
@@ -203,7 +207,11 @@ if plotTotalUsage:
     for i in range(methodsNum):
         plt.plot(range(0,len(cpuUsages[i])*tick,tick), cpuUsages[i])
     
-    plt.legend(methods, loc='best')
+    plt.plot(range(0,len(cpuAllocatables[0])*tick,tick), cpuAllocatables[0])
+    legends = methods
+    legends.append('capacity')
+
+    plt.legend(legends, loc='best')
     plt.xlabel(STR_TIME_MIN)
     plt.ylabel(STR_CPU_CORES)
     # plt.ylim(0,Y_MAX)
@@ -230,8 +238,12 @@ if plotOverbook:
     fig = plt.figure(figsize=FIG_ONE_COL)
     for i in range(methodsNum):
         plt.plot(range(0,len(overbookNodes[i])*tick,tick), overbookNodes[i])
+    
+    plt.plot(range(0,len(cpuAllocatables[0])*tick,tick), cpuAllocatables[0])
+    legends = methods
+    legends.append('capacity')
 
-    plt.legend(methods, loc='best')
+    plt.legend(legends, loc='best')
     plt.xlabel(STR_TIME_MIN)
     plt.ylabel(STR_NODES)
     plt.suptitle("Overbook")
