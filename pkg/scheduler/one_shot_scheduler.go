@@ -50,6 +50,7 @@ type OneShotScheduler struct {
 }
 
 const TIME_OUT = 10
+const PENALTY = 1.5
 
 // NodeMetrics contains node's name & metrics
 type NodeMetrics struct {
@@ -189,7 +190,7 @@ func (sched *OneShotScheduler) estimate(nodeInfoMap map[string]*nodeinfo.NodeInf
 		}
 		nodeMetricsArray = append(nodeMetricsArray, nodeMetrics)
 		if _, ok := sched.penaltyMap[nodeName]; !ok {
-			sched.penaltyMap[nodeName] = 1.0
+			sched.penaltyMap[nodeName] = PENALTY
 		}
 	}
 
@@ -198,15 +199,15 @@ func (sched *OneShotScheduler) estimate(nodeInfoMap map[string]*nodeinfo.NodeInf
 		for i, p := range sched.prevPredictions {
 			m := nodeMetricsArray[i]
 			if !util.ResourceListGE(p.Usage, m.Usage) {
-				sched.penaltyMap[m.Name] = sched.penaltyMap[m.Name] * 1.1
-				sched.penaltyTiming[m.Name] = 0.0
+				sched.penaltyMap[m.Name] = sched.penaltyMap[m.Name] * PENALTY
+				sched.penaltyTiming[m.Name] = 0
 			} else if util.ResourceListGE(p.Usage, m.Usage) {
 				sched.penaltyTiming[m.Name]++
 				if sched.penaltyTiming[m.Name] >= TIME_OUT {
-					sched.penaltyMap[m.Name] = 1.0
+					sched.penaltyMap[m.Name] = PENALTY
 				}
 			} else {
-				sched.penaltyTiming[m.Name] = 0.0
+				sched.penaltyTiming[m.Name] = 0
 			}
 			nodeMetricsArray[i].Usage = util.ResourceListMultiply(m.Usage, sched.penaltyMap[m.Name])
 		}
