@@ -64,6 +64,8 @@ var (
 	totalPodsNum         = uint64(10)
 	workloadSubsetFactor = int(1)
 	submittedPodsNum     = uint64(0)
+	predictionPenalty    = float32(1.0)
+	penaltyTimeout       = int(1)
 	podMap               = make(map[string][]string)
 	// schedulerName    = "bestfit"
 	schedulerName = "default"
@@ -117,6 +119,10 @@ func init() {
 		&workloadSubsetFactor, "subset-factor", 1, "subset factor of workload trace")
 	rootCmd.PersistentFlags().IntVar(
 		&workloadSubfolderCap, "workload-subfolder-cap", 10000, "number of pods/jobs per folder")
+	rootCmd.PersistentFlags().IntVar(
+		&penaltyTimeout, "penalty-timeout", 10, "number of time slots to reset penalty")
+	rootCmd.PersistentFlags().Float32Var(
+		&predictionPenalty, "prediction-penalty", 1.0, "penalty")
 }
 
 var rootCmd = &cobra.Command{
@@ -292,6 +298,8 @@ func buildScheduler() scheduler.Scheduler {
 	log.L.Infof("tick: %d", tick)
 	log.L.Infof("start: %v", startClockStr)
 	log.L.Infof("endClockStr: %v", endClockStr)
+	log.L.Infof("predictionPenalty: %v", predictionPenalty)
+	log.L.Infof("penaltyTimeout: %v", penaltyTimeout)
 
 	switch schedName := strings.ToLower(schedulerName); schedName {
 	case PROPOSED:
@@ -324,7 +332,7 @@ func buildScheduler() scheduler.Scheduler {
 	case ONE_SHOT:
 		log.L.Infof("Scheduler: %s", ONE_SHOT)
 		globalOverSubFactor = 1.0
-		sched := scheduler.NewOneShotScheduler(false)
+		sched := scheduler.NewOneShotScheduler(false, predictionPenalty, penaltyTimeout)
 		// 2. Register extender(s)
 		sched.AddExtender(
 			scheduler.Extender{

@@ -38,19 +38,18 @@ import (
 
 // OneShotScheduler makes scheduling decision for each given pod in the one-by-one manner and pick the busiest pod first.
 type OneShotScheduler struct {
-	extenders       []Extender
-	predicates      map[string]predicates.FitPredicate
-	penaltyMap      map[string]float32
-	penaltyTiming   map[string]int
-	prioritizers    []priorities.PriorityConfig
-	prevPredictions []*NodeMetrics
+	extenders         []Extender
+	predicates        map[string]predicates.FitPredicate
+	penaltyMap        map[string]float32
+	penaltyTiming     map[string]int
+	prioritizers      []priorities.PriorityConfig
+	prevPredictions   []*NodeMetrics
+	predictionPenalty float32
+	penaltyTimeout    int
 
 	lastNodeIndex     uint64
 	preemptionEnabled bool
 }
-
-const TIME_OUT = 10
-const PENALTY = 1.5
 
 // NodeMetrics contains node's name & metrics
 type NodeMetrics struct {
@@ -60,12 +59,14 @@ type NodeMetrics struct {
 }
 
 // NewOneShotScheduler creates a new OneShotScheduler.
-func NewOneShotScheduler(preeptionEnabled bool) OneShotScheduler {
+func NewOneShotScheduler(preeptionEnabled bool, penalty float32, timeOut int) OneShotScheduler {
 	return OneShotScheduler{
 		predicates:        map[string]predicates.FitPredicate{},
 		preemptionEnabled: preeptionEnabled,
 		penaltyMap:        make(map[string]float32),
 		penaltyTiming:     make(map[string]int),
+		penaltyTimeout:    timeOut,
+		predictionPenalty: penalty,
 	}
 }
 
@@ -190,7 +191,7 @@ func (sched *OneShotScheduler) estimate(nodeInfoMap map[string]*nodeinfo.NodeInf
 		}
 		nodeMetricsArray = append(nodeMetricsArray, nodeMetrics)
 		if _, ok := sched.penaltyMap[nodeName]; !ok {
-			sched.penaltyMap[nodeName] = PENALTY
+			sched.penaltyMap[nodeName] = sched.predictionPenalty
 		}
 	}
 
@@ -199,12 +200,12 @@ func (sched *OneShotScheduler) estimate(nodeInfoMap map[string]*nodeinfo.NodeInf
 		for i, p := range sched.prevPredictions {
 			m := nodeMetricsArray[i]
 			if !util.ResourceListGE(p.Usage, m.Usage) {
-				sched.penaltyMap[m.Name] = sched.penaltyMap[m.Name] * PENALTY
+				sched.penaltyMap[m.Name] = sched.penaltyMap[m.Name] * sched.predictionPenalty
 				sched.penaltyTiming[m.Name] = 0
 			} else if util.ResourceListGE(p.Usage, m.Usage) {
 				sched.penaltyTiming[m.Name]++
-				if sched.penaltyTiming[m.Name] >= TIME_OUT {
-					sched.penaltyMap[m.Name] = PENALTY
+				if sched.penaltyTiming[m.Name] >= sched.penaltyTimeout {
+					sched.penaltyMap[m.Name] = sched.predictionPenalty
 				}
 			} else {
 				sched.penaltyTiming[m.Name] = 0

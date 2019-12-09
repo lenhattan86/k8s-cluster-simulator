@@ -20,6 +20,8 @@ isDebug=true
 workloadSubfolderCap=100000
 startTrace="000000000"
 targetNum=0
+penaltyTimeout=10
+predictionPenalty=2
 
 if $isOfficial
 then
@@ -65,6 +67,8 @@ runSim(){
     --target-pod-num=$targetNum \
     --subset-factor=$workloadSubsetFactor \
     --workload-subfolder-cap=$workloadSubfolderCap \
+    --penalty-timeout=$penaltyTimeout \
+    --prediction-penalty=$predictionPenalty \
     &> run_${1}.out
 }
 #rm -rf *.out
