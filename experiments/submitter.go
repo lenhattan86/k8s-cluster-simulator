@@ -85,7 +85,7 @@ func (s *mySubmitter) loadWorkload(
 	paths := podMap[clock.ToRFC3339()]
 	// load the pods and submit them.
 	events := make([]submitter.Event, 0, len(paths)+1)
-	log.L.Infof("no of tasks,%v,%v", clock.ToRFC3339(), len(paths))
+	// log.L.Infof("no of tasks,%v,%v", clock.ToRFC3339(), len(paths))
 	for _, path := range paths {
 		newPod, err := s.loadPod(path)
 		if err != nil {

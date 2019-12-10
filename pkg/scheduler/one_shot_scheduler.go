@@ -230,67 +230,6 @@ func (sched *OneShotScheduler) monitor(nodeInfoMap map[string]*nodeinfo.NodeInfo
 	return nodeMetricsMap
 }
 
-// do one-shot scheduling
-func (sched *OneShotScheduler) scheduleAll_old(
-	pods []*v1.Pod,
-	nodeLister algorithm.NodeLister,
-	nodeInfoMap map[string]*nodeinfo.NodeInfo) (map[string]core.ScheduleResult, error) {
-	scheduleMap := make(map[string]core.ScheduleResult)
-	nodes, err := nodeLister.List()
-
-	if err != nil {
-		return scheduleMap, err
-	}
-
-	nodeNum := len(nodes)
-	if nodeNum == 0 {
-		return scheduleMap, core.ErrNoNodesAvailable
-	}
-	nodeMetricsArray := sched.estimate(nodeInfoMap)
-
-	// sort pods
-	sortablePods := kutil.SortableList{CompFunc: kutil.HigherResourceRequest}
-	for _, p := range pods {
-		sortablePods.Items = append(sortablePods.Items, p)
-	}
-	sortablePods.Sort()
-
-	for _, pod := range sortablePods.Items {
-		// init min value
-		min := kutil.GetResourceRequest(pod.(*v1.Pod))
-		min.Add(nodeMetricsArray[0].Usage)
-		host := nodeMetricsArray[0].Name
-		cap := nodeinfo.NewResource(nodeMetricsArray[0].Allocatable)
-		idx := 0
-
-		// search for min
-		for i, n := range nodeMetricsArray {
-			temp := kutil.GetResourceRequest(pod.(*v1.Pod))
-			temp.Add(n.Usage)
-			// log.L.Infof("min %v temp %v", min, temp)
-			if temp.MilliCPU < min.MilliCPU && temp.Memory < min.Memory {
-				min = temp
-				host = n.Name
-				idx = i
-				cap = nodeinfo.NewResource(n.Allocatable)
-			}
-		}
-
-		if min.MilliCPU <= cap.MilliCPU && min.Memory <= cap.Memory {
-			result := core.ScheduleResult{
-				SuggestedHost:  host,
-				EvaluatedNodes: nodeNum,
-				FeasibleNodes:  1,
-			}
-			scheduleMap[pod.(*v1.Pod).Name] = result
-			// update resource usage
-			nodeMetricsArray[idx].Usage = util.ResourceListSum(nodeMetricsArray[idx].Usage, util.PodTotalResourceRequests(pod.(*v1.Pod)))
-		}
-	}
-
-	return scheduleMap, nil
-}
-
 func (sched *OneShotScheduler) scheduleAll(
 	pods []*v1.Pod,
 	nodeLister algorithm.NodeLister,
@@ -345,8 +284,6 @@ func (sched *OneShotScheduler) scheduleAll(
 			scheduleMap[pod.(*v1.Pod).Name] = result
 			// update resource usage
 			nodeMetricsArray[idx].Usage = util.ResourceListSum(nodeMetricsArray[idx].Usage, util.PodTotalResourceRequests(pod.(*v1.Pod)))
-		} else {
-			break
 		}
 	}
 

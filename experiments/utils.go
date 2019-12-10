@@ -141,6 +141,14 @@ func ConvertTraceToPod(csvFile string, startTimestamp string, cpuFactor int, mem
 
 		cpuUsage := int(cpu * float64(cpuFactor))
 		memusage := int(mem * float64(memFactor))
+		if cpuUsage > requestCpu {
+			log.L.Errorf("task %v's resource demands are too large cpuUsage=%v requestCpu=%v", csvFile, cpuUsage, requestCpu)
+		}
+		if memusage > requestMem {
+			log.L.Errorf("task %v's resource demands are too large memusage=%v requestMem=%v", csvFile, memusage, requestMem)
+		} else {
+			mem = m
+		}
 		phaseLen := (end - start) / MICRO_SECONDS
 		taskLast += phaseLen
 		isStop := false

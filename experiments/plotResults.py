@@ -239,10 +239,7 @@ if plotOverbook:
     for i in range(methodsNum):
         plt.plot(range(0,len(overbookNodes[i])*tick,tick), overbookNodes[i])
     
-    plt.plot(range(0,len(cpuAllocatables[0])*tick,tick), cpuAllocatables[0])
-    legends = methods
-    legends.append('capacity')
-
+    legends = methods   
     plt.legend(legends, loc='best')
     plt.xlabel(STR_TIME_MIN)
     plt.ylabel(STR_NODES)

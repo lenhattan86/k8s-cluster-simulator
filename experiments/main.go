@@ -211,12 +211,12 @@ func convertTrace2Workload(tracePath string, workloadPath string) {
 	if fileNum > int(totalPodsNum) {
 		fileNum = int(totalPodsNum)
 	}
-	parralel := false
+	parralel := true
 
 	if parralel {
 		ctx, _ := context.WithCancel(context.Background())
 		workqueue.ParallelizeUntil(ctx, workerNum, int(fileNum), func(i int) {
-			if i >= fileNum*workloadSubsetFactor {
+			if i*workloadSubsetFactor >= fileNum {
 				return
 			}
 			filePath := string(sortableList.Items[i*workloadSubsetFactor].(string))
@@ -231,6 +231,9 @@ func convertTrace2Workload(tracePath string, workloadPath string) {
 		})
 	} else {
 		for i := 0; i < fileNum*workloadSubsetFactor; i += workloadSubsetFactor {
+			if i*workloadSubsetFactor >= fileNum {
+				break
+			}
 			filePath := string(sortableList.Items[i*workloadSubsetFactor].(string))
 			timestamp := int(ArrivalTimeInSeconds(filePath)/tick) * tick // rounding
 			startClock, _ := BuildClock(startClockStr, int64(timestamp-startTimestamp))
