@@ -92,13 +92,13 @@ else
     # runSim $GENERIC true false
     # echo "Generating workload took $SECONDS seconds"
 
-    # SECONDS=0 
-	# runSim $WORST_FIT false false
-    # echo "$WORST_FIT took $SECONDS seconds"
-
     SECONDS=0 
-    runSim $OVER_SUB false false
-    echo "$OVER_SUB took $SECONDS seconds"
+	runSim $WORST_FIT false false
+    echo "$WORST_FIT took $SECONDS seconds"
+
+    # SECONDS=0 
+    # runSim $OVER_SUB false false
+    # echo "$OVER_SUB took $SECONDS seconds"
 
     SECONDS=0 
     runSim $PROPOSED false false    

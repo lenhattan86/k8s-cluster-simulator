@@ -15,8 +15,6 @@
 package metrics
 
 import (
-	"fmt"
-
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/clock"
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/node"
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/pod"
@@ -112,8 +110,8 @@ func allocate(clock clock.Clock, pods []*pod.Pod, capacity, demand, request *nod
 				}
 				pAllocation.MilliCPU += int64(fairShare * float32(extra))
 				pod.CurrentMetrics.ResourceAllocation = pAllocation.ResourceList()
-				fmt.Printf("ResourceAllocation: %v \n", pod.CurrentMetrics.ResourceAllocation)
-				fmt.Printf("pAllocation: %v \n", pAllocation)
+				// fmt.Printf("ResourceAllocation: %v \n", pod.CurrentMetrics.ResourceAllocation)
+				// fmt.Printf("pAllocation: %v \n", pAllocation)
 			}
 		}
 	} else {
