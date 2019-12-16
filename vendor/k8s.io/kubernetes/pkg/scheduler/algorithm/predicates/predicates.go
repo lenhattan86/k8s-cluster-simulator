@@ -22,6 +22,7 @@ import (
 	"os"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"k8s.io/klog"
 
@@ -60,6 +61,8 @@ const (
 	GeneralPred = "GeneralPredicates"
 	// HostNamePred defines the name of predicate HostName.
 	HostNamePred = "HostName"
+	// JobConfictPred defines the name of predicate JobConflict
+	JobConfictPred = "JobConfict"
 	// PodFitsHostPortsPred defines the name of predicate PodFitsHostPorts.
 	PodFitsHostPortsPred = "PodFitsHostPorts"
 	// MatchNodeSelectorPred defines the name of predicate MatchNodeSelector.
@@ -763,6 +766,15 @@ func podName(pod *v1.Pod) string {
 	return pod.Namespace + "/" + pod.Name
 }
 
+func jobName(pod *v1.Pod) string {
+	strs := strings.Split(pod.Name, "-")
+	if len(strs) < 2 {
+		return pod.Name
+	}
+
+	return strs[1]
+}
+
 // PodFitsResources checks if a node has sufficient resources, such as cpu, memory, gpu, opaque int resources etc to run a pod.
 // First return value indicates whether a node has sufficient resources to run a pod while the second return value indicates the
 // predicate failure reasons if the node has insufficient resources to run the pod.
@@ -828,6 +840,22 @@ func PodFitsResources(pod *v1.Pod, meta PredicateMetadata, nodeInfo *schedulerno
 			// not logged. There is visible performance gain from it.
 			klog.Infof("Schedule Pod %+v on Node %+v is allowed, Node is running only %v out of %v Pods.",
 				podName(pod), node.Name, len(nodeInfo.Pods()), allowedPodNumber)
+		}
+	}
+	return len(predicateFails) == 0, predicateFails, nil
+}
+
+// JobConfict checks if a node already has a running task that came from the same node
+// if yes, return false
+func JobConfict(pod *v1.Pod, meta PredicateMetadata, nodeInfo *schedulernodeinfo.NodeInfo) (bool, []PredicateFailureReason, error) {
+	pods := nodeInfo.Pods()
+	var predicateFails []PredicateFailureReason
+
+	job := jobName(pod)
+	for _, p := range pods {
+		if jobName(p) == job {
+			predicateFails = append(predicateFails, &PredicateFailureError{PredicateName: "JobConflict", PredicateDesc: "Job conflict"})
+			break
 		}
 	}
 	return len(predicateFails) == 0, predicateFails, nil

@@ -117,9 +117,10 @@ func (fifo *FIFOQueue) NominatedPods(nodeName string) []*v1.Pod {
 	return []*v1.Pod{}
 }
 
-func (fifo *FIFOQueue) Metrics() Metrics {
+func (fifo *FIFOQueue) Metrics(qualityOfService float32) Metrics {
 	return Metrics{
-		PendingPodsNum: len(fifo.queue),
+		PendingPodsNum:   len(fifo.queue),
+		QualityOfService: qualityOfService,
 	}
 }
 

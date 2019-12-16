@@ -15,8 +15,14 @@
 package main
 
 import (
+	"fmt"
+
+	"github.com/pfnet-research/k8s-cluster-simulator/pkg/metrics"
+	"github.com/pfnet-research/k8s-cluster-simulator/pkg/node"
+	"github.com/pfnet-research/k8s-cluster-simulator/pkg/scheduler"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/kubernetes/pkg/scheduler/api"
+	"k8s.io/kubernetes/pkg/scheduler/nodeinfo"
 )
 
 func filterExtender(args api.ExtenderArgs) api.ExtenderFilterResult {
@@ -35,6 +41,33 @@ func prioritizeExtender(args api.ExtenderArgs) api.HostPriorityList {
 	for _, name := range *args.NodeNames {
 		priorities = append(priorities, api.HostPriority{Host: name, Score: 1})
 	}
-
+	fmt.Printf("priorities %v", priorities)
 	return priorities
+}
+
+func prioritizeLowUsageNode(args api.ExtenderArgs) api.HostPriorityList {
+	nodeMetricsMap := Monitor(*args.NodeNames)
+	// Ranks all nodes equally.
+	priorities := make(api.HostPriorityList, 0, len(*args.NodeNames))
+	for _, name := range *args.NodeNames {
+		usage := nodeinfo.NewResource(nodeMetricsMap[name].Usage)
+		capacity := nodeinfo.NewResource(nodeMetricsMap[name].Allocatable)
+		score := int(api.MaxPriority * (capacity.MilliCPU - usage.MilliCPU) / capacity.MilliCPU)
+		priorities = append(priorities, api.HostPriority{Host: name, Score: score})
+	}
+	fmt.Printf("priorities %v", priorities)
+	return priorities
+}
+
+func Monitor(nodeNames []string) map[string]*scheduler.NodeMetrics {
+	nodeMetricsMap := make(map[string]*scheduler.NodeMetrics)
+	for _, nodeName := range nodeNames {
+		nodeMetrics := &scheduler.NodeMetrics{
+			Name:        nodeName,
+			Usage:       scheduler.GlobalMetrics[metrics.NodesMetricsKey].(map[string]node.Metrics)[nodeName].TotalResourceUsage,
+			Allocatable: scheduler.GlobalMetrics[metrics.NodesMetricsKey].(map[string]node.Metrics)[nodeName].Allocatable,
+		}
+		nodeMetricsMap[nodeName] = nodeMetrics
+	}
+	return nodeMetricsMap
 }

@@ -29,6 +29,7 @@ import (
 	kutil "k8s.io/kubernetes/pkg/scheduler/util"
 
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/clock"
+	l "github.com/pfnet-research/k8s-cluster-simulator/pkg/log"
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/metrics"
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/node"
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/queue"
@@ -98,13 +99,10 @@ func (sched *OnlineListScheduler) Schedule(
 			}
 		}
 
-		log.L.Tracef("Trying to schedule pod %v", pod)
-
 		podKey, err := util.PodKey(pod)
 		if err != nil {
 			return []Event{}, err
 		}
-		log.L.Debugf("Trying to schedule pod %s", podKey)
 		// ... try to bind the pod to a node.
 		nodeMetricsArray := sched.estimate(nodeInfoMap)
 		result, err := sched.scheduleOne(pod, nodeLister, nodeInfoMap, nodeMetricsArray)
@@ -188,19 +186,6 @@ func (sched *OnlineListScheduler) estimate(nodeInfoMap map[string]*nodeinfo.Node
 	return nodeMetricsArray
 }
 
-func (sched *OnlineListScheduler) monitor(nodeInfoMap map[string]*nodeinfo.NodeInfo) map[string]*NodeMetrics {
-	nodeMetricsMap := make(map[string]*NodeMetrics)
-	for nodeName := range nodeInfoMap {
-		nodeMetrics := &NodeMetrics{
-			Name:        nodeName,
-			Usage:       GlobalMetrics[metrics.NodesMetricsKey].(map[string]node.Metrics)[nodeName].TotalResourceUsage,
-			Allocatable: GlobalMetrics[metrics.NodesMetricsKey].(map[string]node.Metrics)[nodeName].Allocatable,
-		}
-		nodeMetricsMap[nodeName] = nodeMetrics
-	}
-	return nodeMetricsMap
-}
-
 // scheduleOne makes scheduling decision for the given pod and nodes.
 // Returns core.ErrNoNodesAvailable if nodeLister lists zero nodes, or core.FitError if the given
 // pod does not fit in any nodes.
@@ -213,6 +198,12 @@ func (sched *OnlineListScheduler) scheduleOne(
 	result := core.ScheduleResult{}
 	nodes, err := nodeLister.List()
 
+	if err != nil {
+		return result, err
+	}
+
+	// Filter out nodes that cannot accommodate the pod.
+	// nodesFiltered, failedPredicateMap, err := sched.filter(pod, nodes, nodeInfoMap, podQueue)
 	if err != nil {
 		return result, err
 	}
@@ -265,4 +256,59 @@ func (sched *OnlineListScheduler) selectHost(priorities api.HostPriorityList) (s
 	// TanLe: Fix the issue for best-fit: do not allow round-robin
 	idx := len(maxScores) - 1
 	return priorities[maxScores[idx]].Host, nil
+}
+
+func (sched *OnlineListScheduler) filter(
+	pod *v1.Pod,
+	nodes []*v1.Node,
+	nodeInfoMap map[string]*nodeinfo.NodeInfo,
+	podQueue queue.PodQueue,
+) ([]*v1.Node, core.FailedPredicateMap, error) {
+
+	if l.IsDebugEnabled() {
+		nodeNames := make([]string, 0, len(nodes))
+		for _, node := range nodes {
+			nodeNames = append(nodeNames, node.Name)
+		}
+		log.L.Debugf("Filtering nodes %v", nodeNames)
+	}
+
+	// In-process plugins
+	filtered, failedPredicateMap, err := filterWithPlugins(pod, sched.predicates, nodes, nodeInfoMap, podQueue)
+	if err != nil {
+		return []*v1.Node{}, core.FailedPredicateMap{}, err
+	}
+
+	if l.IsDebugEnabled() {
+		nodeNames := make([]string, 0, len(filtered))
+		for _, node := range filtered {
+			nodeNames = append(nodeNames, node.Name)
+		}
+		log.L.Debugf("Plugins filtered nodes %v", nodeNames)
+	}
+
+	// Extenders
+	if len(filtered) > 0 && len(sched.extenders) > 0 {
+		for _, extender := range sched.extenders {
+			var err error
+			filtered, err = extender.filter(pod, filtered, nodeInfoMap, failedPredicateMap)
+			if err != nil {
+				return []*v1.Node{}, core.FailedPredicateMap{}, err
+			}
+
+			if len(filtered) == 0 {
+				break
+			}
+		}
+	}
+
+	if l.IsDebugEnabled() {
+		nodeNames := make([]string, 0, len(filtered))
+		for _, node := range filtered {
+			nodeNames = append(nodeNames, node.Name)
+		}
+		log.L.Debugf("Filtered nodes %v", nodeNames)
+	}
+
+	return filtered, failedPredicateMap, nil
 }

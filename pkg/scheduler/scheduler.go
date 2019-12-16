@@ -15,18 +15,25 @@
 package scheduler
 
 import (
+	"github.com/pfnet-research/k8s-cluster-simulator/pkg/clock"
+	"github.com/pfnet-research/k8s-cluster-simulator/pkg/metrics"
+	"github.com/pfnet-research/k8s-cluster-simulator/pkg/node"
+	"github.com/pfnet-research/k8s-cluster-simulator/pkg/queue"
+	"github.com/pfnet-research/k8s-cluster-simulator/pkg/util"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm"
 	"k8s.io/kubernetes/pkg/scheduler/core"
 	"k8s.io/kubernetes/pkg/scheduler/nodeinfo"
-
-	"github.com/pfnet-research/k8s-cluster-simulator/pkg/clock"
-	"github.com/pfnet-research/k8s-cluster-simulator/pkg/metrics"
-	"github.com/pfnet-research/k8s-cluster-simulator/pkg/queue"
 )
 
-// TanLe added GlobalMetrics to keep track resource usage.
 var GlobalMetrics metrics.Metrics
+var NodeMetricsArray []*NodeMetrics
+
+var penaltyMap map[string]float32
+var penaltyTiming map[string]int
+var predictionPenalty float32
+var penaltyTimeout int
+var prevPredictions []*NodeMetrics
 
 // Scheduler defines the lowest-level scheduler interface.
 type Scheduler interface {
@@ -61,3 +68,65 @@ type DeleteEvent struct {
 
 func (b *BindEvent) IsSchedulerEvent() bool   { return true }
 func (d *DeleteEvent) IsSchedulerEvent() bool { return true }
+
+// NodeMetrics contains node's name & metrics
+type NodeMetrics struct {
+	Name        string
+	Usage       v1.ResourceList
+	Allocatable v1.ResourceList
+}
+
+// Monitor monitors metrics.
+func Monitor(nodeInfoMap map[string]*nodeinfo.NodeInfo) map[string]*NodeMetrics {
+	nodeMetricsMap := make(map[string]*NodeMetrics)
+	for nodeName := range nodeInfoMap {
+		nodeMetrics := &NodeMetrics{
+			Name:        nodeName,
+			Usage:       GlobalMetrics[metrics.NodesMetricsKey].(map[string]node.Metrics)[nodeName].TotalResourceUsage,
+			Allocatable: GlobalMetrics[metrics.NodesMetricsKey].(map[string]node.Metrics)[nodeName].Allocatable,
+		}
+		nodeMetricsMap[nodeName] = nodeMetrics
+	}
+	return nodeMetricsMap
+}
+
+// Estimate predict resource usage
+func Estimate(nodeInfoMap map[string]*nodeinfo.NodeInfo) []*NodeMetrics {
+	// monitorMap := monitor(nodeInfoMap)
+	nodeMetricsArray := make([]*NodeMetrics, 0, len(nodeInfoMap))
+	// predict.
+	for nodeName := range nodeInfoMap {
+		nodeMetrics := &NodeMetrics{
+			Name:        nodeName,
+			Usage:       GlobalMetrics[metrics.NodesMetricsKey].(map[string]node.Metrics)[nodeName].TotalResourceUsage,
+			Allocatable: GlobalMetrics[metrics.NodesMetricsKey].(map[string]node.Metrics)[nodeName].Allocatable,
+		}
+		nodeMetricsArray = append(nodeMetricsArray, nodeMetrics)
+		if _, ok := penaltyMap[nodeName]; !ok {
+			penaltyMap[nodeName] = predictionPenalty
+		}
+	}
+
+	// react to prediction errors.
+	if prevPredictions != nil {
+		for i, p := range prevPredictions {
+			m := nodeMetricsArray[i]
+			if !util.ResourceListGE(p.Usage, m.Usage) {
+				penaltyMap[m.Name] = penaltyMap[m.Name] * predictionPenalty
+				penaltyTiming[m.Name] = 0
+			} else if util.ResourceListGE(p.Usage, m.Usage) {
+				penaltyTiming[m.Name]++
+				if penaltyTiming[m.Name] >= penaltyTimeout {
+					penaltyMap[m.Name] = predictionPenalty
+				}
+			} else {
+				penaltyTiming[m.Name] = 0
+			}
+			nodeMetricsArray[i].Usage = util.ResourceListMultiply(m.Usage, penaltyMap[m.Name])
+		}
+	}
+
+	prevPredictions = nodeMetricsArray
+
+	return nodeMetricsArray
+}

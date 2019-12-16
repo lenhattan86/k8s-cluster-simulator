@@ -28,43 +28,29 @@ import (
 	kutil "k8s.io/kubernetes/pkg/scheduler/util"
 
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/clock"
-	"github.com/pfnet-research/k8s-cluster-simulator/pkg/metrics"
-	"github.com/pfnet-research/k8s-cluster-simulator/pkg/node"
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/queue"
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/util"
 )
 
 // OneShotScheduler makes scheduling decision for each given pod in the one-by-one manner and pick the busiest pod first.
 type OneShotScheduler struct {
-	extenders         []Extender
-	predicates        map[string]predicates.FitPredicate
-	penaltyMap        map[string]float32
-	penaltyTiming     map[string]int
-	prioritizers      []priorities.PriorityConfig
-	prevPredictions   []*NodeMetrics
-	predictionPenalty float32
-	penaltyTimeout    int
+	extenders    []Extender
+	predicates   map[string]predicates.FitPredicate
+	prioritizers []priorities.PriorityConfig
 
 	lastNodeIndex     uint64
 	preemptionEnabled bool
 }
 
-// NodeMetrics contains node's name & metrics
-type NodeMetrics struct {
-	Name        string
-	Usage       v1.ResourceList
-	Allocatable v1.ResourceList
-}
-
 // NewOneShotScheduler creates a new OneShotScheduler.
 func NewOneShotScheduler(preeptionEnabled bool, penalty float32, timeOut int) OneShotScheduler {
+	penaltyMap = make(map[string]float32)
+	penaltyTiming = make(map[string]int)
+	penaltyTimeout = timeOut
+	predictionPenalty = penalty
 	return OneShotScheduler{
 		predicates:        map[string]predicates.FitPredicate{},
 		preemptionEnabled: preeptionEnabled,
-		penaltyMap:        make(map[string]float32),
-		penaltyTiming:     make(map[string]int),
-		penaltyTimeout:    timeOut,
-		predictionPenalty: penalty,
 	}
 }
 
@@ -177,59 +163,6 @@ func LowerResourceAvailableNode(nodeMetrics1, nodeMetrics2 interface{}) bool {
 	return util.ResourceListGE(r2, r1)
 }
 
-func (sched *OneShotScheduler) estimate(nodeInfoMap map[string]*nodeinfo.NodeInfo) []*NodeMetrics {
-	// monitorMap := sched.monitor(nodeInfoMap)
-	nodeMetricsArray := make([]*NodeMetrics, 0, len(nodeInfoMap))
-	// predict.
-	for nodeName := range nodeInfoMap {
-		nodeMetrics := &NodeMetrics{
-			Name:        nodeName,
-			Usage:       GlobalMetrics[metrics.NodesMetricsKey].(map[string]node.Metrics)[nodeName].TotalResourceUsage,
-			Allocatable: GlobalMetrics[metrics.NodesMetricsKey].(map[string]node.Metrics)[nodeName].Allocatable,
-		}
-		nodeMetricsArray = append(nodeMetricsArray, nodeMetrics)
-		if _, ok := sched.penaltyMap[nodeName]; !ok {
-			sched.penaltyMap[nodeName] = sched.predictionPenalty
-		}
-	}
-
-	// react to prediction errors.
-	if sched.prevPredictions != nil {
-		for i, p := range sched.prevPredictions {
-			m := nodeMetricsArray[i]
-			if !util.ResourceListGE(p.Usage, m.Usage) {
-				sched.penaltyMap[m.Name] = sched.penaltyMap[m.Name] * sched.predictionPenalty
-				sched.penaltyTiming[m.Name] = 0
-			} else if util.ResourceListGE(p.Usage, m.Usage) {
-				sched.penaltyTiming[m.Name]++
-				if sched.penaltyTiming[m.Name] >= sched.penaltyTimeout {
-					sched.penaltyMap[m.Name] = sched.predictionPenalty
-				}
-			} else {
-				sched.penaltyTiming[m.Name] = 0
-			}
-			nodeMetricsArray[i].Usage = util.ResourceListMultiply(m.Usage, sched.penaltyMap[m.Name])
-		}
-	}
-
-	sched.prevPredictions = nodeMetricsArray
-
-	return nodeMetricsArray
-}
-
-func (sched *OneShotScheduler) monitor(nodeInfoMap map[string]*nodeinfo.NodeInfo) map[string]*NodeMetrics {
-	nodeMetricsMap := make(map[string]*NodeMetrics)
-	for nodeName := range nodeInfoMap {
-		nodeMetrics := &NodeMetrics{
-			Name:        nodeName,
-			Usage:       GlobalMetrics[metrics.NodesMetricsKey].(map[string]node.Metrics)[nodeName].TotalResourceUsage,
-			Allocatable: GlobalMetrics[metrics.NodesMetricsKey].(map[string]node.Metrics)[nodeName].Allocatable,
-		}
-		nodeMetricsMap[nodeName] = nodeMetrics
-	}
-	return nodeMetricsMap
-}
-
 func (sched *OneShotScheduler) scheduleAll(
 	pods []*v1.Pod,
 	nodeLister algorithm.NodeLister,
@@ -245,7 +178,7 @@ func (sched *OneShotScheduler) scheduleAll(
 	if nodeNum == 0 {
 		return scheduleMap, core.ErrNoNodesAvailable
 	}
-	nodeMetricsArray := sched.estimate(nodeInfoMap)
+	nodeMetricsArray := Estimate(nodeInfoMap)
 
 	// sort pods
 	sortablePods := kutil.SortableList{CompFunc: kutil.HigherResourceRequest}

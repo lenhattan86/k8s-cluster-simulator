@@ -27,18 +27,20 @@ import (
 
 // Pod represents a simulated pod.
 type Pod struct {
-	v1      *v1.Pod
-	spec    spec
-	boundAt clock.Clock
-	status  Status
-	node    string
+	v1             *v1.Pod
+	spec           spec
+	boundAt        clock.Clock
+	status         Status
+	node           string
+	CurrentMetrics *Metrics
 }
 
 // Metrics is a metrics of a pod at one time point.
 type Metrics struct {
-	ResourceRequest v1.ResourceList
-	ResourceLimit   v1.ResourceList
-	ResourceUsage   v1.ResourceList
+	ResourceRequest    v1.ResourceList
+	ResourceLimit      v1.ResourceList
+	ResourceUsage      v1.ResourceList
+	ResourceAllocation v1.ResourceList
 
 	BoundAt         clock.Clock
 	Node            string
@@ -111,10 +113,11 @@ func (pod *Pod) ToV1() *v1.Pod {
 
 // Metrics returns the Metrics of this Pod at the given clock.
 func (pod *Pod) Metrics(clock clock.Clock) Metrics {
-	return Metrics{
-		ResourceRequest: pod.TotalResourceRequests(),
-		ResourceLimit:   pod.TotalResourceLimits(),
-		ResourceUsage:   pod.ResourceUsage(clock),
+	metrics := Metrics{
+		ResourceRequest:    pod.TotalResourceRequests(),
+		ResourceLimit:      pod.TotalResourceLimits(),
+		ResourceUsage:      pod.ResourceUsage(clock),
+		ResourceAllocation: pod.ResourceUsage(clock),
 
 		BoundAt:         pod.boundAt,
 		Node:            pod.node,
@@ -123,6 +126,8 @@ func (pod *Pod) Metrics(clock clock.Clock) Metrics {
 		Priority: util.PodPriority(pod.ToV1()),
 		Status:   pod.status,
 	}
+	pod.CurrentMetrics = &metrics
+	return metrics
 }
 
 // TotalResourceRequests extracts the total amount of resource requested by this Pod.

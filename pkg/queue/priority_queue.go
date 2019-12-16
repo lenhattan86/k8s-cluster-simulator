@@ -161,9 +161,10 @@ func (pq *PriorityQueue) NominatedPods(nodeName string) []*v1.Pod {
 	return pods
 }
 
-func (pq *PriorityQueue) Metrics() Metrics {
+func (pq *PriorityQueue) Metrics(qualityOfService float32) Metrics {
 	return Metrics{
-		PendingPodsNum: pq.inner.Len(),
+		PendingPodsNum:   pq.inner.Len(),
+		QualityOfService: qualityOfService,
 	}
 }
 

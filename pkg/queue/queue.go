@@ -23,7 +23,8 @@ import (
 
 // Metrics represents a metrics of a PodQueue at one time point.
 type Metrics struct {
-	PendingPodsNum int
+	PendingPodsNum   int
+	QualityOfService float32
 }
 
 var (
@@ -75,5 +76,5 @@ type PodQueue interface {
 	RemoveNominatedNode(pod *v1.Pod) error
 
 	// Metrics returns a metrics of this PodQueue.
-	Metrics() Metrics
+	Metrics(QualityOfService float32) Metrics
 }

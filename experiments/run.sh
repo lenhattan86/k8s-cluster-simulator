@@ -35,9 +35,9 @@ then
     tick=60
     metricsTick=60
 else
-    nodeNum=10
-    totalPodNumber=5000
-    targetNum=100
+    nodeNum=1
+    totalPodNumber=2
+    targetNum=2
     start="2019-01-01T00:00:00+09:00"
     end="2019-01-01T00:30:00+09:00"
     pathToTrace="/ssd/projects/google-trace-data/task-res"
@@ -71,9 +71,7 @@ runSim(){
     --prediction-penalty=$predictionPenalty \
     &> run_${1}.out
 }
-#rm -rf *.out
-
-
+rm -rf *.out
 echo "running simulation"
 
 if $isOfficial
@@ -90,21 +88,21 @@ then
     wait
     echo "simulation took $SECONDS seconds"
 else
-    SECONDS=0
+    # SECONDS=0
     # runSim $GENERIC true false
-    echo "Generating workload took $SECONDS seconds"
+    # echo "Generating workload took $SECONDS seconds"
 
-    SECONDS=0 
-	runSim $WORST_FIT false false
-    echo "$WORST_FIT took $SECONDS seconds"
+    # SECONDS=0 
+	# runSim $WORST_FIT false false
+    # echo "$WORST_FIT took $SECONDS seconds"
 
     SECONDS=0 
     runSim $OVER_SUB false false
     echo "$OVER_SUB took $SECONDS seconds"
 
     SECONDS=0 
-    runSim $ONE_SHOT false false    
-    echo "$ONE_SHOT took $SECONDS seconds"
+    runSim $PROPOSED false false    
+    echo "$PROPOSED took $SECONDS seconds"
 fi
 
 

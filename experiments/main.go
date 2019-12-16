@@ -305,33 +305,6 @@ func buildScheduler() scheduler.Scheduler {
 	log.L.Infof("penaltyTimeout: %v", penaltyTimeout)
 
 	switch schedName := strings.ToLower(schedulerName); schedName {
-	case PROPOSED:
-		log.L.Infof("Scheduler: %s", PROPOSED)
-		globalOverSubFactor = 2.0
-		sched := scheduler.NewProposedScheduler(false)
-		// 2. Register extender(s)
-		sched.AddExtender(
-			scheduler.Extender{
-				Name:             "MyExtender",
-				Filter:           filterExtender,
-				Prioritize:       prioritizeExtender,
-				Weight:           1,
-				NodeCacheCapable: true,
-			},
-		)
-
-		// 2. Register plugin(s)
-		// Predicate
-		sched.AddPredicate("PodFitsResourcesOverSub", predicates.PodFitsResourcesOverSub)
-		// Prioritizer
-		sched.AddPrioritizer(priorities.PriorityConfig{
-			Name:   "MostRequested",
-			Map:    priorities.MostRequestedPriorityMap,
-			Reduce: nil,
-			Weight: 1,
-		})
-
-		return &sched
 	case ONE_SHOT:
 		log.L.Infof("Scheduler: %s", ONE_SHOT)
 		globalOverSubFactor = 1.0
@@ -349,7 +322,7 @@ func buildScheduler() scheduler.Scheduler {
 
 		// 2. Register plugin(s)
 		// Predicate
-		// sched.AddPredicate("PodFitsResourcesOverSub", predicates.PodFitsResourcesOverSub)
+		sched.AddPredicate("JobConfictPredicates", predicates.JobConfict)
 		// Prioritizer
 		sched.AddPrioritizer(priorities.PriorityConfig{
 			Name:   "MostRequested",
@@ -357,6 +330,27 @@ func buildScheduler() scheduler.Scheduler {
 			Reduce: nil,
 			Weight: 1,
 		})
+
+		return &sched
+	case PROPOSED:
+		log.L.Infof("Scheduler: %s", PROPOSED)
+		globalOverSubFactor = 1.0
+		sched := scheduler.NewGenericScheduler(false)
+		// 2. Register extender(s)
+		sched.AddExtender(
+			scheduler.Extender{
+				Name:             "MyExtender",
+				Filter:           filterExtender,
+				Prioritize:       prioritizeLowUsageNode,
+				Weight:           1,
+				NodeCacheCapable: true,
+			},
+		)
+
+		// 2. Register plugin(s)
+		// Predicate
+		sched.AddPredicate("JobConfictPredicates", predicates.JobConfict)
+		// Prioritizer
 
 		return &sched
 	case OVER_SUB:
@@ -376,6 +370,7 @@ func buildScheduler() scheduler.Scheduler {
 		// 2. Register plugin(s)
 		// Predicate
 		sched.AddPredicate("PodFitsResourcesOverSub", predicates.PodFitsResourcesOverSub)
+		sched.AddPredicate("JobConfictPredicates", predicates.JobConfict)
 		// Prioritizer
 		sched.AddPrioritizer(priorities.PriorityConfig{
 			Name: "LeastRequested",
@@ -404,6 +399,7 @@ func buildScheduler() scheduler.Scheduler {
 		// 2. Register plugin(s)
 		// Predicate
 		sched.AddPredicate("PodFitsResources", predicates.PodFitsResources)
+		sched.AddPredicate("JobConfictPredicates", predicates.JobConfict)
 		// Prioritizer
 		sched.AddPrioritizer(priorities.PriorityConfig{
 			Name:   "MostRequested",
@@ -427,10 +423,10 @@ func buildScheduler() scheduler.Scheduler {
 				NodeCacheCapable: true,
 			},
 		)
-
 		// 2. Register plugin(s)
 		// Predicate
 		sched.AddPredicate("PodFitsResources", predicates.PodFitsResources)
+		sched.AddPredicate("JobConfictPredicates", predicates.JobConfict)
 		// Prioritizer
 		sched.AddPrioritizer(priorities.PriorityConfig{
 			Name:   "LeastRequested",
@@ -458,6 +454,7 @@ func buildScheduler() scheduler.Scheduler {
 		// 2. Register plugin(s)
 		// Predicate
 		sched.AddPredicate("GeneralPredicates", predicates.GeneralPredicates)
+		sched.AddPredicate("JobConfictPredicates", predicates.JobConfict)
 		// Prioritizer
 		sched.AddPrioritizer(priorities.PriorityConfig{
 			Name:   "BalancedResourceAllocation",
