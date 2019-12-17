@@ -84,7 +84,7 @@ var (
 	endClockStr          = "3019-01-01T00:00:00+09:00"
 	startTimestampTrace  = "0"
 	tick                 = 1
-	nodeCap              = []int{64 * 1000, 128 * 1024, 1 * 1024 * 1024}
+	nodeMaxCap           = []int{64 * 1000, 128 * 1024, 1 * 1024 * 1024}
 	workloadSubfolderCap = 2
 )
 
@@ -197,7 +197,7 @@ func convertTrace2Workload(tracePath string, workloadPath string) {
 			if strings.Contains(path, "csv") {
 				timestamp := ArrivalTimeInSeconds(path)
 				arrivalClock, _ := BuildClock(startClockStr, int64(timestamp-startTimestamp))
-				if !endClock.Before(arrivalClock) {
+				if !endClock.Before(arrivalClock) && !arrivalClock.Before(startClock) {
 					paths = append(paths, path)
 				}
 			}
@@ -232,7 +232,7 @@ func convertTrace2Workload(tracePath string, workloadPath string) {
 			timestamp := int(ArrivalTimeInSeconds(filePath)/tick) * tick // rounding
 			startClock, _ := BuildClock(startClockStr, int64(timestamp-startTimestamp))
 			maxLength := int(endClock.Sub(startClock).Seconds())
-			pod, err := ConvertTraceToPod(filePath, "0", nodeCap[0], nodeCap[1], maxLength)
+			pod, err := ConvertTraceToPod(filePath, "0", nodeMaxCap[0], nodeMaxCap[1], maxLength)
 			if err == nil && maxLength > 0 {
 				subWorkload := strconv.Itoa(i / workloadSubfolderCap)
 				WritePodAsJson(*pod, workloadPath+"/"+subWorkload, startClock)
@@ -247,7 +247,7 @@ func convertTrace2Workload(tracePath string, workloadPath string) {
 			timestamp := int(ArrivalTimeInSeconds(filePath)/tick) * tick // rounding
 			startClock, _ := BuildClock(startClockStr, int64(timestamp-startTimestamp))
 			maxLength := int(endClock.Sub(startClock).Seconds())
-			pod, err := ConvertTraceToPod(filePath, "0", nodeCap[0], nodeCap[1], maxLength)
+			pod, err := ConvertTraceToPod(filePath, "0", nodeMaxCap[0], nodeMaxCap[1], maxLength)
 			if err == nil && maxLength > 0 {
 				subWorkload := strconv.Itoa(i / workloadSubfolderCap)
 				WritePodAsJson(*pod, workloadPath+"/"+subWorkload, startClock)
