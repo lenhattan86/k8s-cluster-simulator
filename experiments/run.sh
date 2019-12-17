@@ -24,6 +24,7 @@ penaltyTimeout=10
 predictionPenalty=3
 targetQoS=0.99
 penaltyUpdate=0.99
+isDistributeTasks="false"
 
 if $isOfficial
 then
@@ -61,6 +62,7 @@ runSim(){
     --oversub=$oversub \
     --istrace=$3 \
     --trace="$pathToTrace" \
+    --is-distribute=$isDistributeTasks \
     --start="$start" \
     --end="$end" \
     --trace-start="$startTrace" \

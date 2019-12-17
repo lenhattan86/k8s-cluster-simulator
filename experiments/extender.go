@@ -15,8 +15,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/scheduler"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -71,15 +69,15 @@ func filterFitResource(args api.ExtenderArgs) api.ExtenderFilterResult {
 
 	nodeNames := make([]string, 0, len(*args.NodeNames))
 	failedNodesMap := make(map[string]string)
-	for i, name := range *args.NodeNames {
+	for _, name := range *args.NodeNames {
 		if _, ok := scheduler.NodeMetricsCache[name]; ok {
 			request := kutil.GetResourceRequest(args.Pod)
 			usage := scheduler.NodeMetricsCache[name].Usage
 			capacity := scheduler.NodeMetricsCache[name].Allocatable
 			if (capacity.MilliCPU-usage.MilliCPU-request.MilliCPU) < 0 || (capacity.Memory-usage.Memory-request.Memory) < 0 {
-				nodeList.Items = append(nodeList.Items, args.Nodes.Items[i])
+				// nodeList.Items = append(nodeList.Items, args.Nodes.Items[i])
+				// fmt.Println("filltered out %v ", name)
 				failedNodesMap[name] = "This node's usage is too high"
-				fmt.Println("filtered out node %v %v %v %v", name, usage, request, capacity)
 			} else {
 				nodeNames = append(nodeNames, name)
 			}
@@ -87,7 +85,7 @@ func filterFitResource(args api.ExtenderArgs) api.ExtenderFilterResult {
 			nodeNames = append(nodeNames, name)
 		}
 	}
-
+	// fmt.Println(" filltered nodes: ", nodeNames, " for ", args.Pod.Name)
 	return api.ExtenderFilterResult{
 		Nodes:       &nodeList,
 		NodeNames:   &nodeNames,
