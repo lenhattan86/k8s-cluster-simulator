@@ -25,7 +25,9 @@ plotOverload = True
 plotTotalRequest = True
 plotTotalUsage = True
 plotOverbook = True
-loads = [plotTotalUsage, True, False, plotOverload, plotOverbook, plotObj, plotTotalRequest]
+plotQoS=True
+plotPredictionPenalty=True
+loads = [plotTotalUsage, True, False, plotOverload, plotOverbook, plotObj, plotTotalRequest, plotQoS, plotPredictionPenalty]
 
 path = "./log"
 arg_len = len(sys.argv) - 1
@@ -45,6 +47,8 @@ def loadLog(filepath) :
     busyNodes = []
     overloadNodes = []
     overBookNodes = []
+    QoS = []
+    PredPenalty = []
 
     with open(filepath) as fp:
         line = fp.readline()
@@ -117,6 +121,13 @@ def loadLog(filepath) :
             if (loads[6]):
                 cpuRequests.append(totalCpuRequest)
 
+            # Queue":{"PendingPodsNum":1,"QualityOfService":1,"PredictionPenalty":2.97}
+            queue = data['Queue']
+            if (loads[7]):
+                QoS.append(float(queue['QualityOfService']))
+            if (loads[8]):
+                PredPenalty.append(float(queue['PredictionPenalty']))
+
             i=i+1            
             if line_num > 0 and i >= line_num:
                 break
@@ -124,7 +135,7 @@ def loadLog(filepath) :
 
     fp.close()
 
-    return busyNodes, overloadNodes, overBookNodes, cpuUsages, cpuRequests, maxCpuUsages, cpuAllocatables
+    return busyNodes, overloadNodes, overBookNodes, cpuUsages, cpuRequests, maxCpuUsages, cpuAllocatables, QoS, PredPenalty
 
 def formatQuatity(str):
     strArray = re.split('(\d+)', str)
@@ -138,7 +149,7 @@ def formatQuatity(str):
 
     return val
 
-methods = ["oneshot","worstfit","oversub"]
+methods = ["proposed","worstfit","oversub"]
 # methods = ["oneshot","worstfit"]
 methodsNum = len(methods)
 busyNodes = []
@@ -148,9 +159,11 @@ cpuUsages = []
 maxCpuUsages = []
 cpuAllocatables = []
 cpuRequests = []
+QoSs = []
+PredPenalties = []
 
 for m in methods:
-    b, ol, ob, u, ur, mu, a = loadLog(path+"/kubesim_"+m+".log")
+    b, ol, ob, u, ur, mu, a, q, p = loadLog(path+"/kubesim_"+m+".log")
     busyNodes.append(b)
     overloadNodes.append(ol)
     overbookNodes.append(ob)
@@ -158,6 +171,8 @@ for m in methods:
     maxCpuUsages.append(mu)
     cpuAllocatables.append(a)
     cpuRequests.append(ur)
+    QoSs.append(q)
+    PredPenalties.append(p)
 
 ############# PLOTTING ##############
 if not os.path.exists(FIG_PATH):
@@ -247,7 +262,33 @@ if plotOverbook:
     # plt.ylim(0,Y_MAX)
 
     fig.savefig(FIG_PATH+"/overbook.pdf", bbox_inches='tight')
+
+## plot performance: number of overload nodes.
+if plotQoS:
+    fig = plt.figure(figsize=FIG_ONE_COL)
+    for i in range(methodsNum):
+        plt.plot(range(0,len(QoSs[i])*tick,tick), QoSs[i])
     
+    legends = methods   
+    plt.legend(legends, loc='best')
+    plt.xlabel(STR_TIME_MIN)
+    plt.ylabel(STR_QoS)
+    plt.ylim(0,1.1)
+
+    fig.savefig(FIG_PATH+"/qos.pdf", bbox_inches='tight')
+
+if plotPredictionPenalty:
+    fig = plt.figure(figsize=FIG_ONE_COL)
+    i=0
+    plt.plot(range(0,len(PredPenalties[i])*tick,tick), PredPenalties[i])
+    
+    plt.xlabel(STR_TIME_MIN)
+    plt.ylabel(STR_Pred_Penalty)
+    plt.ylim(0,3.1)
+
+    fig.savefig(FIG_PATH+"/pred_penalty.pdf", bbox_inches='tight')
+
+# STR_Pred_Penalty
 ## show figures
 if show:
     plt.show()

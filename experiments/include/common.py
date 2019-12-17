@@ -28,6 +28,8 @@ STR_TIME_SEC = "time (secs)"
 STR_CPU_CORES = "CPU cores"
 STR_MEM_GB = "Mem. (GB)"
 STR_NODES = "nodes"
+STR_QoS = "QoS"
+STR_Pred_Penalty = "Prediction Penalty"
 
 ## colors
 COLOR_CPU = "red"
