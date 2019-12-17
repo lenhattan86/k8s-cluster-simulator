@@ -19,7 +19,7 @@ package api
 import (
 	"time"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -32,7 +32,7 @@ const (
 	// MaxTotalPriority defines the max total priority value.
 	MaxTotalPriority = MaxInt
 	// MaxPriority defines the max priority value.
-	MaxPriority = 10
+	MaxPriority = 100
 	// MaxWeight defines the max weight value.
 	MaxWeight = MaxInt / MaxPriority
 	// DefaultPercentageOfNodesToScore defines the percentage of nodes of all nodes

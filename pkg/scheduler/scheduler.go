@@ -19,7 +19,6 @@ import (
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/metrics"
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/node"
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/queue"
-	"github.com/pfnet-research/k8s-cluster-simulator/pkg/util"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm"
 	"k8s.io/kubernetes/pkg/scheduler/core"
@@ -27,13 +26,18 @@ import (
 )
 
 var GlobalMetrics metrics.Metrics
-var NodeMetricsArray []*NodeMetrics
+var NodeResource metrics.Metrics
+var NodeMetricsMap = make(map[string]*NodeMetrics)
+var NodeMetricsCache = make(map[string]*NodeMetrics)
 
-var penaltyMap map[string]float32
-var penaltyTiming map[string]int
-var predictionPenalty float32
-var penaltyTimeout int
-var prevPredictions []*NodeMetrics
+var PenaltyMap = make(map[string]float32)
+var PenaltyTiming = make(map[string]int)
+var PredictionPenalty float32
+var PenaltyUpdate float32
+var StopUpdate = false
+var TargetQoS float32
+var PenaltyTimeout int
+var PrevPredictions map[string]*NodeMetrics
 
 // Scheduler defines the lowest-level scheduler interface.
 type Scheduler interface {
@@ -69,11 +73,9 @@ type DeleteEvent struct {
 func (b *BindEvent) IsSchedulerEvent() bool   { return true }
 func (d *DeleteEvent) IsSchedulerEvent() bool { return true }
 
-// NodeMetrics contains node's name & metrics
 type NodeMetrics struct {
-	Name        string
-	Usage       v1.ResourceList
-	Allocatable v1.ResourceList
+	Usage       nodeinfo.Resource
+	Allocatable nodeinfo.Resource
 }
 
 // Monitor monitors metrics.
@@ -81,9 +83,8 @@ func Monitor(nodeInfoMap map[string]*nodeinfo.NodeInfo) map[string]*NodeMetrics 
 	nodeMetricsMap := make(map[string]*NodeMetrics)
 	for nodeName := range nodeInfoMap {
 		nodeMetrics := &NodeMetrics{
-			Name:        nodeName,
-			Usage:       GlobalMetrics[metrics.NodesMetricsKey].(map[string]node.Metrics)[nodeName].TotalResourceUsage,
-			Allocatable: GlobalMetrics[metrics.NodesMetricsKey].(map[string]node.Metrics)[nodeName].Allocatable,
+			Usage:       *nodeinfo.NewResource(GlobalMetrics[metrics.NodesMetricsKey].(map[string]node.Metrics)[nodeName].TotalResourceUsage),
+			Allocatable: *nodeinfo.NewResource(GlobalMetrics[metrics.NodesMetricsKey].(map[string]node.Metrics)[nodeName].Allocatable),
 		}
 		nodeMetricsMap[nodeName] = nodeMetrics
 	}
@@ -91,42 +92,48 @@ func Monitor(nodeInfoMap map[string]*nodeinfo.NodeInfo) map[string]*NodeMetrics 
 }
 
 // Estimate predict resource usage
-func Estimate(nodeInfoMap map[string]*nodeinfo.NodeInfo) []*NodeMetrics {
+func Estimate(nodeNames []string) map[string]*NodeMetrics {
 	// monitorMap := monitor(nodeInfoMap)
-	nodeMetricsArray := make([]*NodeMetrics, 0, len(nodeInfoMap))
+	nodeMetricsMap := make(map[string]*NodeMetrics)
 	// predict.
-	for nodeName := range nodeInfoMap {
-		nodeMetrics := &NodeMetrics{
-			Name:        nodeName,
-			Usage:       GlobalMetrics[metrics.NodesMetricsKey].(map[string]node.Metrics)[nodeName].TotalResourceUsage,
-			Allocatable: GlobalMetrics[metrics.NodesMetricsKey].(map[string]node.Metrics)[nodeName].Allocatable,
-		}
-		nodeMetricsArray = append(nodeMetricsArray, nodeMetrics)
-		if _, ok := penaltyMap[nodeName]; !ok {
-			penaltyMap[nodeName] = predictionPenalty
+	for _, nodeName := range nodeNames {
+		usage := *nodeinfo.NewResource(GlobalMetrics[metrics.NodesMetricsKey].(map[string]node.Metrics)[nodeName].TotalResourceUsage)
+		cap := *nodeinfo.NewResource(GlobalMetrics[metrics.NodesMetricsKey].(map[string]node.Metrics)[nodeName].Allocatable)
+		usage.MilliCPU = usage.MilliCPU * int64(PredictionPenalty*100) / 100
+		usage.Memory = usage.Memory * int64(PredictionPenalty*100) / 100
+		nodeMetricsMap[nodeName] = &NodeMetrics{
+			Usage:       usage,
+			Allocatable: cap,
 		}
 	}
 
 	// react to prediction errors.
-	if prevPredictions != nil {
-		for i, p := range prevPredictions {
-			m := nodeMetricsArray[i]
-			if !util.ResourceListGE(p.Usage, m.Usage) {
-				penaltyMap[m.Name] = penaltyMap[m.Name] * predictionPenalty
-				penaltyTiming[m.Name] = 0
-			} else if util.ResourceListGE(p.Usage, m.Usage) {
-				penaltyTiming[m.Name]++
-				if penaltyTiming[m.Name] >= penaltyTimeout {
-					penaltyMap[m.Name] = predictionPenalty
-				}
-			} else {
-				penaltyTiming[m.Name] = 0
-			}
-			nodeMetricsArray[i].Usage = util.ResourceListMultiply(m.Usage, penaltyMap[m.Name])
+	// if prevPredictions != nil {
+	// 	for i, p := range prevPredictions {
+	// 		m := nodeMetricsArray[i]
+	// 		if !util.ResourceListGE(p.Usage, m.Usage) {
+	// 			penaltyMap[m.Name] = penaltyMap[m.Name] * predictionPenalty
+	// 			penaltyTiming[m.Name] = 0
+	// 		} else if util.ResourceListGE(p.Usage, m.Usage) {
+	// 			penaltyTiming[m.Name]++
+	// 			if penaltyTiming[m.Name] >= penaltyTimeout {
+	// 				penaltyMap[m.Name] = predictionPenalty
+	// 			}
+	// 		} else {
+	// 			penaltyTiming[m.Name] = 0
+	// 		}
+	// 		nodeMetricsArray[i].Usage = util.ResourceListMultiply(m.Usage, penaltyMap[m.Name])
+	// 	}
+	// }
+
+	if GlobalMetrics[metrics.QueueMetricsKey].(queue.Metrics).QualityOfService < TargetQoS {
+		StopUpdate = true
+	} else {
+		if !StopUpdate {
+			PredictionPenalty = PredictionPenalty * PenaltyUpdate
 		}
 	}
 
-	prevPredictions = nodeMetricsArray
-
-	return nodeMetricsArray
+	// PrevPredictions = nodeMetricsMap
+	return nodeMetricsMap
 }

@@ -105,7 +105,7 @@ func allocate(clock clock.Clock, pods []*pod.Pod, capacity, demand, request *nod
 				pAllocation := nodeinfo.NewResource(pod.CurrentMetrics.ResourceAllocation)
 
 				extra := pUsage.MilliCPU - pAllocation.MilliCPU
-				if extra == 0 {
+				if pUsage.MilliCPU >= pAllocation.MilliCPU && pUsage.Memory >= pAllocation.Memory {
 					numSatifisedPods++
 				}
 				pAllocation.MilliCPU += int64(fairShare * float32(extra))
@@ -153,7 +153,7 @@ func allocate(clock clock.Clock, pods []*pod.Pod, capacity, demand, request *nod
 }
 
 // BuildMetrics builds a Metrics at the given clock.
-func BuildMetrics(clock clock.Clock, nodes map[string]*node.Node, queue queue.PodQueue) (Metrics, error) {
+func BuildMetrics(clock clock.Clock, nodes map[string]*node.Node, queue queue.PodQueue, predictionPenalty float32) (Metrics, error) {
 	isTinyMetrics := false
 	metrics := make(map[string]interface{})
 	metrics[ClockKey] = clock.ToRFC3339()
@@ -199,8 +199,8 @@ func BuildMetrics(clock clock.Clock, nodes map[string]*node.Node, queue queue.Po
 	}
 
 	metrics[NodesMetricsKey] = nodesMetrics
-	metrics[PodsMetricsKey] = podsMetrics
-	metrics[QueueMetricsKey] = queue.Metrics(QualityOfService)
+	metrics[PodsMetricsKey] = make(map[string]pod.Metrics) //podsMetrics
+	metrics[QueueMetricsKey] = queue.Metrics(QualityOfService, predictionPenalty)
 
 	return metrics, nil
 }

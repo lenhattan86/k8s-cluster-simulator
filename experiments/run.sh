@@ -21,7 +21,9 @@ workloadSubfolderCap=100000
 startTrace="000000000"
 targetNum=0
 penaltyTimeout=10
-predictionPenalty=2
+predictionPenalty=3
+targetQoS=0.99
+penaltyUpdate=0.99
 
 if $isOfficial
 then
@@ -35,7 +37,7 @@ then
     tick=60
     metricsTick=60
 else
-    nodeNum=1
+    nodeNum=2
     totalPodNumber=2
     targetNum=2
     start="2019-01-01T00:00:00+09:00"
@@ -69,6 +71,8 @@ runSim(){
     --workload-subfolder-cap=$workloadSubfolderCap \
     --penalty-timeout=$penaltyTimeout \
     --prediction-penalty=$predictionPenalty \
+    --target-qos=$targetQoS \
+    --penalty-update=$penaltyUpdate \
     &> run_${1}.out
 }
 rm -rf *.out
@@ -84,7 +88,7 @@ then
     echo "running simulation"
     runSim $WORST_FIT false false &
     runSim $OVER_SUB false false &
-    runSim $ONE_SHOT false false &
+    runSim $PROPOSED false false &
     wait
     echo "simulation took $SECONDS seconds"
 else
@@ -96,9 +100,9 @@ else
 	runSim $WORST_FIT false false
     echo "$WORST_FIT took $SECONDS seconds"
 
-    # SECONDS=0 
-    # runSim $OVER_SUB false false
-    # echo "$OVER_SUB took $SECONDS seconds"
+    SECONDS=0 
+    runSim $OVER_SUB false false
+    echo "$OVER_SUB took $SECONDS seconds"
 
     SECONDS=0 
     runSim $PROPOSED false false    

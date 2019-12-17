@@ -154,7 +154,7 @@ func (k *KubeSim) AddSubmitter(name string, submitter submitter.Submitter) {
 // This method blocks until ctx is done or this KubeSim finishes processing all pods.
 func (k *KubeSim) Run(ctx context.Context) error {
 	preMetricsClock := k.clock
-	met, err := metrics.BuildMetrics(k.clock, k.nodes, k.pendingPods)
+	met, err := metrics.BuildMetrics(k.clock, k.nodes, k.pendingPods, scheduler.PredictionPenalty)
 
 	if err != nil {
 		return err
@@ -195,11 +195,13 @@ func (k *KubeSim) Run(ctx context.Context) error {
 			}
 
 			// Rebuild metrics every tick for submitters to use.
-			met, err = metrics.BuildMetrics(k.clock, k.nodes, k.pendingPods)
+			met, err = metrics.BuildMetrics(k.clock, k.nodes, k.pendingPods, scheduler.PredictionPenalty)
 			if err != nil {
 				return err
 			}
 			scheduler.GlobalMetrics = met
+			scheduler.NodeMetricsMap = scheduler.Estimate(k.nodeNames)
+			scheduler.NodeMetricsCache = scheduler.NodeMetricsMap
 
 			if k.clock.Sub(preMetricsClock) >= k.metricsTick {
 				preMetricsClock = k.clock

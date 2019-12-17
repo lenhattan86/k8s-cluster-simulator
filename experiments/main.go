@@ -65,6 +65,8 @@ var (
 	workloadSubsetFactor = int(1)
 	submittedPodsNum     = uint64(0)
 	predictionPenalty    = float32(1.0)
+	targetQoS            = float32(0.0)
+	penaltyUpdate        = float32(0.99)
 	penaltyTimeout       = int(1)
 	podMap               = make(map[string][]string)
 	// schedulerName    = "bestfit"
@@ -123,6 +125,10 @@ func init() {
 		&penaltyTimeout, "penalty-timeout", 10, "number of time slots to reset penalty")
 	rootCmd.PersistentFlags().Float32Var(
 		&predictionPenalty, "prediction-penalty", 1.0, "penalty")
+	rootCmd.PersistentFlags().Float32Var(
+		&targetQoS, "target-qos", 1.0, "target qos")
+	rootCmd.PersistentFlags().Float32Var(
+		&penaltyUpdate, "penalty-update", 1.0, "target qos")
 }
 
 var rootCmd = &cobra.Command{
@@ -302,36 +308,43 @@ func buildScheduler() scheduler.Scheduler {
 	log.L.Infof("start: %v", startClockStr)
 	log.L.Infof("endClockStr: %v", endClockStr)
 	log.L.Infof("predictionPenalty: %v", predictionPenalty)
+	log.L.Infof("targetQoS: %v", targetQoS)
 	log.L.Infof("penaltyTimeout: %v", penaltyTimeout)
+	log.L.Infof("penaltyUpdate: %v", penaltyUpdate)
+
+	scheduler.PredictionPenalty = predictionPenalty
+	scheduler.PenaltyTimeout = penaltyTimeout
+	scheduler.TargetQoS = targetQoS
+	scheduler.PenaltyUpdate = penaltyUpdate
 
 	switch schedName := strings.ToLower(schedulerName); schedName {
-	case ONE_SHOT:
-		log.L.Infof("Scheduler: %s", ONE_SHOT)
-		globalOverSubFactor = 1.0
-		sched := scheduler.NewOneShotScheduler(false, predictionPenalty, penaltyTimeout)
-		// 2. Register extender(s)
-		sched.AddExtender(
-			scheduler.Extender{
-				Name:             "MyExtender",
-				Filter:           filterExtender,
-				Prioritize:       prioritizeExtender,
-				Weight:           1,
-				NodeCacheCapable: true,
-			},
-		)
+	// case ONE_SHOT:
+	// 	log.L.Infof("Scheduler: %s", ONE_SHOT)
+	// 	globalOverSubFactor = 1.0
+	// 	sched := scheduler.NewOneShotScheduler(false, predictionPenalty, penaltyTimeout)
+	// 	// 2. Register extender(s)
+	// 	sched.AddExtender(
+	// 		scheduler.Extender{
+	// 			Name:             "MyExtender",
+	// 			Filter:           filterExtender,
+	// 			Prioritize:       prioritizeExtender,
+	// 			Weight:           1,
+	// 			NodeCacheCapable: true,
+	// 		},
+	// 	)
 
-		// 2. Register plugin(s)
-		// Predicate
-		sched.AddPredicate("JobConfictPredicates", predicates.JobConfict)
-		// Prioritizer
-		sched.AddPrioritizer(priorities.PriorityConfig{
-			Name:   "MostRequested",
-			Map:    priorities.MostRequestedPriorityMap,
-			Reduce: nil,
-			Weight: 1,
-		})
+	// 	// 2. Register plugin(s)
+	// 	// Predicate
+	// 	sched.AddPredicate("JobConfictPredicates", predicates.JobConfict)
+	// 	// Prioritizer
+	// 	sched.AddPrioritizer(priorities.PriorityConfig{
+	// 		Name:   "MostRequested",
+	// 		Map:    priorities.MostRequestedPriorityMap,
+	// 		Reduce: nil,
+	// 		Weight: 1,
+	// 	})
 
-		return &sched
+	// 	return &sched
 	case PROPOSED:
 		log.L.Infof("Scheduler: %s", PROPOSED)
 		globalOverSubFactor = 1.0
@@ -339,8 +352,8 @@ func buildScheduler() scheduler.Scheduler {
 		// 2. Register extender(s)
 		sched.AddExtender(
 			scheduler.Extender{
-				Name:             "MyExtender",
-				Filter:           filterExtender,
+				Name:             "filterFitResource & prioritizeLowUsageNode",
+				Filter:           filterFitResource,
 				Prioritize:       prioritizeLowUsageNode,
 				Weight:           1,
 				NodeCacheCapable: true,
@@ -356,16 +369,6 @@ func buildScheduler() scheduler.Scheduler {
 	case OVER_SUB:
 		log.L.Infof("Scheduler: %s", OVER_SUB)
 		sched := scheduler.NewGenericScheduler(false)
-		// 2. Register extender(s)
-		sched.AddExtender(
-			scheduler.Extender{
-				Name:             "MyExtender",
-				Filter:           filterExtender,
-				Prioritize:       prioritizeExtender,
-				Weight:           1,
-				NodeCacheCapable: true,
-			},
-		)
 
 		// 2. Register plugin(s)
 		// Predicate
@@ -413,16 +416,6 @@ func buildScheduler() scheduler.Scheduler {
 		log.L.Infof("Scheduler: %s", WOSRT_FIT)
 		globalOverSubFactor = 1.0
 		sched := scheduler.NewGenericScheduler(false)
-		// 2. Register extender(s)
-		sched.AddExtender(
-			scheduler.Extender{
-				Name:             "MyExtender",
-				Filter:           filterExtender,
-				Prioritize:       prioritizeExtender,
-				Weight:           1,
-				NodeCacheCapable: true,
-			},
-		)
 		// 2. Register plugin(s)
 		// Predicate
 		sched.AddPredicate("PodFitsResources", predicates.PodFitsResources)

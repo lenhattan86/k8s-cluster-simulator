@@ -156,13 +156,6 @@ func (sched *OneShotScheduler) Schedule(
 
 var _ = Scheduler(&OneShotScheduler{})
 
-// LowerResourceAvailableNode returns less available resource
-func LowerResourceAvailableNode(nodeMetrics1, nodeMetrics2 interface{}) bool {
-	r1 := util.ResourceListSub(nodeMetrics1.(*NodeMetrics).Allocatable, nodeMetrics1.(*NodeMetrics).Usage)
-	r2 := util.ResourceListSub(nodeMetrics2.(*NodeMetrics).Allocatable, nodeMetrics2.(*NodeMetrics).Usage)
-	return util.ResourceListGE(r2, r1)
-}
-
 func (sched *OneShotScheduler) scheduleAll(
 	pods []*v1.Pod,
 	nodeLister algorithm.NodeLister,
