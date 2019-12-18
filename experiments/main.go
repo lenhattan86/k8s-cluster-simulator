@@ -58,6 +58,7 @@ var (
 	configPath           string
 	isGenWorkload        = false
 	isConvertTrace       = false
+	isMultipleResource   = false
 	isDistributedTasks   = true
 	workloadPath         string
 	tracePath            string
@@ -106,6 +107,8 @@ func init() {
 		&isConvertTrace, "istrace", false, "convert trace's csv to json")
 	rootCmd.PersistentFlags().BoolVar(
 		&isDistributedTasks, "is-distribute", true, "distribute tasks from the same jobs.")
+	rootCmd.PersistentFlags().BoolVar(
+		&isMultipleResource, "is-multiple-resource", true, "distribute tasks from the same jobs.")
 	rootCmd.PersistentFlags().StringVar(
 		&tracePath, "trace", "./data/sample/tasks", "config file (excluding file extension)")
 	rootCmd.PersistentFlags().StringVar(
@@ -222,6 +225,11 @@ func convertTrace2Workload(tracePath string, workloadPath string) {
 	}
 	parralel := true
 
+	if !isMultipleResource {
+		nodeMaxCap[1] = 0
+		nodeMaxCap[2] = 0
+	}
+
 	if parralel {
 		ctx, _ := context.WithCancel(context.Background())
 		workqueue.ParallelizeUntil(ctx, workerNum, int(fileNum), func(i int) {
@@ -259,6 +267,7 @@ func convertTrace2Workload(tracePath string, workloadPath string) {
 
 func buildScheduler() scheduler.Scheduler {
 	if isGenWorkload {
+		start := time.Now()
 		log.L.Infof("Generating %v pods", totalPodsNum)
 		os.RemoveAll(workloadPath)
 		os.MkdirAll(workloadPath, 0755)
@@ -266,8 +275,15 @@ func buildScheduler() scheduler.Scheduler {
 			convertTrace2Workload(tracePath, workloadPath)
 			return nil
 		}
+		lapse := time.Since(start)
+		if _, ok := scheduler.TimingMap["convertTrace2Workload"]; !ok {
+			scheduler.TimingMap["convertTrace2Workload"] = lapse.Microseconds()
+		} else {
+			scheduler.TimingMap["convertTrace2Workload"] += lapse.Microseconds()
+		}
 	}
 
+	start := time.Now()
 	count := uint64(0)
 	err := filepath.Walk(workloadPath,
 		func(path string, info os.FileInfo, err error) error {
@@ -298,6 +314,13 @@ func buildScheduler() scheduler.Scheduler {
 		log.L.Infof("Total number of pods in the workload folder: %v", totalPodsNum)
 	}
 
+	lapse := time.Since(start)
+	if _, ok := scheduler.TimingMap["loadWorkload"]; !ok {
+		scheduler.TimingMap["loadWorkload"] = lapse.Microseconds()
+	} else {
+		scheduler.TimingMap["loadWorkload"] += lapse.Microseconds()
+	}
+
 	log.L.Infof("scheduler input %s", schedulerName)
 	log.L.Infof("Submitting %d pods", totalPodsNum)
 	log.L.Infof("workload: %s", workloadPath)
@@ -315,6 +338,7 @@ func buildScheduler() scheduler.Scheduler {
 	log.L.Infof("penaltyTimeout: %v", penaltyTimeout)
 	log.L.Infof("penaltyUpdate: %v", penaltyUpdate)
 	log.L.Infof("isDistributedTasks: %v", isDistributedTasks)
+	log.L.Infof("isMultipleResource: %v", isMultipleResource)
 
 	scheduler.PredictionPenalty = predictionPenalty
 	scheduler.PenaltyTimeout = penaltyTimeout

@@ -102,7 +102,7 @@ func (sched *GenericScheduler) Schedule(
 		start := time.Now()
 		result, err := sched.scheduleOne(pod, nodeLister, nodeInfoMap, pendingPods)
 		lapse := time.Since(start)
-		if _, ok := TimingMap["sched.scheduleOne"]; ok {
+		if _, ok := TimingMap["sched.scheduleOne"]; !ok {
 			TimingMap["sched.scheduleOne"] = lapse.Microseconds()
 		} else {
 			TimingMap["sched.scheduleOne"] += lapse.Microseconds()

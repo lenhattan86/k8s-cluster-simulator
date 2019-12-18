@@ -10,7 +10,7 @@ ONE_SHOT="oneshot"
 WORST_FIT="worstfit"
 GENERIC="generic"
 
-oversub=1.5
+oversub=2.0
 nodeNum=5000
 cpuPerNode=64
 memPerNode=128
@@ -21,10 +21,11 @@ workloadSubfolderCap=100000
 startTrace="000000000"
 targetNum=0
 penaltyTimeout=10
-predictionPenalty=3
+predictionPenalty=2
 targetQoS=0.99
 penaltyUpdate=0.99
 isDistributeTasks="false"
+isMultipleResource="false"
 
 if $isOfficial
 then
@@ -75,6 +76,7 @@ runSim(){
     --prediction-penalty=$predictionPenalty \
     --target-qos=$targetQoS \
     --penalty-update=$penaltyUpdate \
+    --is-multiple-resource=$isMultipleResource \
     &> run_${1}.out
 }
 rm -rf *.out

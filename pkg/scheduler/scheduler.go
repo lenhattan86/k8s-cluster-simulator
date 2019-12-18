@@ -130,7 +130,7 @@ func Estimate(nodeNames []string) map[string]*NodeMetrics {
 	if GlobalMetrics[metrics.QueueMetricsKey].(queue.Metrics).QualityOfService < TargetQoS {
 		StopUpdate = true
 	} else {
-		if !StopUpdate {
+		if !StopUpdate && GlobalMetrics[metrics.QueueMetricsKey].(queue.Metrics).PendingPodsNum > 0 {
 			PredictionPenalty = PredictionPenalty * PenaltyUpdate
 		}
 	}
