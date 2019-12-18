@@ -40,7 +40,7 @@ func (d *dummyPredicateMetadata) ShallowCopy() predicates.PredicateMetadata     
 func (d *dummyPredicateMetadata) AddPod(pod *v1.Pod, nodeInfo *nodeinfo.NodeInfo) error { return nil }
 func (d *dummyPredicateMetadata) RemovePod(pod *v1.Pod) error                           { return nil }
 
-const workerNum = 16
+const workerNum = 32
 
 func filterWithPlugins(
 	pod *v1.Pod,

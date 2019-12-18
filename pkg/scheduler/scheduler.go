@@ -95,6 +95,13 @@ func Monitor(nodeInfoMap map[string]*nodeinfo.NodeInfo) map[string]*NodeMetrics 
 // Estimate predict resource usage
 func Estimate(nodeNames []string) map[string]*NodeMetrics {
 	// monitorMap := monitor(nodeInfoMap)
+	prevQoS := GlobalMetrics[metrics.QueueMetricsKey].(queue.Metrics).QualityOfService
+	if prevQoS < TargetQoS {
+		PredictionPenalty = PredictionPenalty / PenaltyUpdate
+	} else if prevQoS > TargetQoS {
+		PredictionPenalty = PredictionPenalty * PenaltyUpdate
+	}
+
 	nodeMetricsMap := make(map[string]*NodeMetrics)
 	// predict.
 	for _, nodeName := range nodeNames {
@@ -108,33 +115,5 @@ func Estimate(nodeNames []string) map[string]*NodeMetrics {
 		}
 	}
 
-	// react to prediction errors.
-	// if prevPredictions != nil {
-	// 	for i, p := range prevPredictions {
-	// 		m := nodeMetricsArray[i]
-	// 		if !util.ResourceListGE(p.Usage, m.Usage) {
-	// 			penaltyMap[m.Name] = penaltyMap[m.Name] * predictionPenalty
-	// 			penaltyTiming[m.Name] = 0
-	// 		} else if util.ResourceListGE(p.Usage, m.Usage) {
-	// 			penaltyTiming[m.Name]++
-	// 			if penaltyTiming[m.Name] >= penaltyTimeout {
-	// 				penaltyMap[m.Name] = predictionPenalty
-	// 			}
-	// 		} else {
-	// 			penaltyTiming[m.Name] = 0
-	// 		}
-	// 		nodeMetricsArray[i].Usage = util.ResourceListMultiply(m.Usage, penaltyMap[m.Name])
-	// 	}
-	// }
-
-	if GlobalMetrics[metrics.QueueMetricsKey].(queue.Metrics).QualityOfService < TargetQoS {
-		StopUpdate = true
-	} else {
-		if !StopUpdate && GlobalMetrics[metrics.QueueMetricsKey].(queue.Metrics).PendingPodsNum > 0 {
-			PredictionPenalty = PredictionPenalty * PenaltyUpdate
-		}
-	}
-
-	// PrevPredictions = nodeMetricsMap
 	return nodeMetricsMap
 }

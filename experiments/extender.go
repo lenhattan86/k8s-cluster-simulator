@@ -15,9 +15,12 @@
 package main
 
 import (
+	"context"
+
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/scheduler"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/util/workqueue"
 	"k8s.io/kubernetes/pkg/scheduler/api"
 	kutil "k8s.io/kubernetes/pkg/scheduler/util"
 )
@@ -32,6 +35,8 @@ func filterExtender(args api.ExtenderArgs) api.ExtenderFilterResult {
 	}
 }
 
+const parralel = true
+
 func prioritizeExtender(args api.ExtenderArgs) api.HostPriorityList {
 	// Ranks all nodes equally.
 	priorities := make(api.HostPriorityList, 0, len(*args.NodeNames))
@@ -42,16 +47,33 @@ func prioritizeExtender(args api.ExtenderArgs) api.HostPriorityList {
 }
 
 func prioritizeLowUsageNode(args api.ExtenderArgs) api.HostPriorityList {
-	priorities := make(api.HostPriorityList, 0, len(*args.NodeNames))
-	for _, name := range *args.NodeNames {
-		if _, ok := scheduler.NodeMetricsCache[name]; ok {
-			request := kutil.GetResourceRequest(args.Pod)
-			usage := scheduler.NodeMetricsCache[name].Usage
-			capacity := scheduler.NodeMetricsCache[name].Allocatable
-			score := int(api.MaxPriority * (capacity.MilliCPU - usage.MilliCPU - request.MilliCPU) / capacity.MilliCPU)
-			priorities = append(priorities, api.HostPriority{Host: name, Score: score})
-		} else {
-			priorities = append(priorities, api.HostPriority{Host: name, Score: api.MaxPriority})
+	priorities := make(api.HostPriorityList, len(*args.NodeNames))
+	if parralel {
+		ctx, _ := context.WithCancel(context.Background())
+		// Run predicate plugins in parallel along nodes.
+		workqueue.ParallelizeUntil(ctx, workerNum, int(len(*args.NodeNames)), func(i int) {
+			name := (*args.NodeNames)[i]
+			if _, ok := scheduler.NodeMetricsCache[name]; ok {
+				request := kutil.GetResourceRequest(args.Pod)
+				usage := scheduler.NodeMetricsCache[name].Usage
+				capacity := scheduler.NodeMetricsCache[name].Allocatable
+				score := int(api.MaxPriority * (capacity.MilliCPU - usage.MilliCPU - request.MilliCPU) / capacity.MilliCPU)
+				priorities[i] = api.HostPriority{Host: name, Score: score}
+			} else {
+				priorities[i] = api.HostPriority{Host: name, Score: api.MaxPriority}
+			}
+		})
+	} else {
+		for i, name := range *args.NodeNames {
+			if _, ok := scheduler.NodeMetricsCache[name]; ok {
+				request := kutil.GetResourceRequest(args.Pod)
+				usage := scheduler.NodeMetricsCache[name].Usage
+				capacity := scheduler.NodeMetricsCache[name].Allocatable
+				score := int(api.MaxPriority * (capacity.MilliCPU - usage.MilliCPU - request.MilliCPU) / capacity.MilliCPU)
+				priorities[i] = api.HostPriority{Host: name, Score: score}
+			} else {
+				priorities[i] = api.HostPriority{Host: name, Score: api.MaxPriority}
+			}
 		}
 	}
 	return priorities
@@ -66,26 +88,49 @@ func filterFitResource(args api.ExtenderArgs) api.ExtenderFilterResult {
 		// ListMeta: metav1.ListMeta{},
 		Items: make([]v1.Node, 0, len(*args.NodeNames)),
 	}
-
 	nodeNames := make([]string, 0, len(*args.NodeNames))
 	failedNodesMap := make(map[string]string)
-	for _, name := range *args.NodeNames {
-		if _, ok := scheduler.NodeMetricsCache[name]; ok {
-			request := kutil.GetResourceRequest(args.Pod)
-			usage := scheduler.NodeMetricsCache[name].Usage
-			capacity := scheduler.NodeMetricsCache[name].Allocatable
-			if (capacity.MilliCPU-usage.MilliCPU-request.MilliCPU) < 0 || (capacity.Memory-usage.Memory-request.Memory) < 0 {
-				// nodeList.Items = append(nodeList.Items, args.Nodes.Items[i])
-				// fmt.Println("filltered out %v ", name)
+	if parralel {
+		names := make([]string, len(*args.NodeNames))
+		ctx, _ := context.WithCancel(context.Background())
+		// Run predicate plugins in parallel along nodes.
+		workqueue.ParallelizeUntil(ctx, workerNum, int(len(*args.NodeNames)), func(i int) {
+			name := (*args.NodeNames)[i]
+			if _, ok := scheduler.NodeMetricsCache[name]; ok {
+				request := kutil.GetResourceRequest(args.Pod)
+				usage := scheduler.NodeMetricsCache[name].Usage
+				capacity := scheduler.NodeMetricsCache[name].Allocatable
+				if (capacity.MilliCPU-usage.MilliCPU-request.MilliCPU) >= 0 && (capacity.Memory-usage.Memory-request.Memory) >= 0 {
+					names[i] = name
+				}
+			} else {
+				names[i] = name
+			}
+		})
+		for _, name := range names {
+			if name != "" {
+				nodeNames = append(nodeNames, name)
+			} else {
 				failedNodesMap[name] = "This node's usage is too high"
+			}
+		}
+	} else {
+		for _, name := range *args.NodeNames {
+			if _, ok := scheduler.NodeMetricsCache[name]; ok {
+				request := kutil.GetResourceRequest(args.Pod)
+				usage := scheduler.NodeMetricsCache[name].Usage
+				capacity := scheduler.NodeMetricsCache[name].Allocatable
+				if (capacity.MilliCPU-usage.MilliCPU-request.MilliCPU) < 0 || (capacity.Memory-usage.Memory-request.Memory) < 0 {
+					failedNodesMap[name] = "This node's usage is too high"
+				} else {
+					nodeNames = append(nodeNames, name)
+				}
 			} else {
 				nodeNames = append(nodeNames, name)
 			}
-		} else {
-			nodeNames = append(nodeNames, name)
 		}
+
 	}
-	// fmt.Println(" filltered nodes: ", nodeNames, " for ", args.Pod.Name)
 	return api.ExtenderFilterResult{
 		Nodes:       &nodeList,
 		NodeNames:   &nodeNames,

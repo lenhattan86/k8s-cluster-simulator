@@ -39,11 +39,11 @@ then
     tick=60
     metricsTick=60
 else
-    nodeNum=2
-    totalPodNumber=2
-    targetNum=2
+    nodeNum=10
+    totalPodNumber=1000
+    targetNum=100
     start="2019-01-01T00:00:00+09:00"
-    end="2019-01-01T00:30:00+09:00"
+    end="2019-01-01T01:00:00+09:00"
     pathToTrace="/ssd/projects/google-trace-data/task-res"
     pathToWorkload="./tmp/workload"
     log_path="./log"
@@ -56,7 +56,7 @@ mkdir $log_path
 
 runSim(){
     ./gen_config.sh $1 "." $nodeNum $cpuPerNode $memPerNode $tick $metricsTick "$start" $log_path
-    go run $(go list ./...) --config="./config/cluster_$1" \
+    go run github.com/pfnet-research/k8s-cluster-simulator/experiments --config="./config/cluster_$1" \
     --workload="$pathToWorkload"  \
     --scheduler="$1" \
     --isgen=$2 \
@@ -79,7 +79,6 @@ runSim(){
     --is-multiple-resource=$isMultipleResource \
     &> run_${1}.out
 }
-rm -rf *.out
 echo "running simulation"
 
 if $isOfficial
@@ -100,9 +99,9 @@ else
     # runSim $GENERIC true false
     # echo "Generating workload took $SECONDS seconds"
 
-    SECONDS=0 
-	runSim $WORST_FIT false false
-    echo "$WORST_FIT took $SECONDS seconds"
+    # SECONDS=0 
+	# runSim $WORST_FIT false false
+    # echo "$WORST_FIT took $SECONDS seconds"
 
     SECONDS=0 
     runSim $OVER_SUB false false

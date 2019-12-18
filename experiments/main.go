@@ -89,7 +89,7 @@ var (
 	workloadSubfolderCap = 2
 )
 
-const workerNum = 64
+const workerNum = 32
 
 func init() {
 	log.L.Infof("Running KubeSim @ %s", time.Now().Format(time.RFC850))

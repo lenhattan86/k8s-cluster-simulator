@@ -15,11 +15,16 @@
 package metrics
 
 import (
+	"context"
+	"sync"
+	"sync/atomic"
+
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/clock"
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/node"
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/pod"
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/queue"
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/util"
+	"k8s.io/client-go/util/workqueue"
 	"k8s.io/kubernetes/pkg/scheduler/nodeinfo"
 )
 
@@ -65,10 +70,10 @@ func min(a, b int64) int64 {
 	return b
 }
 
-func allocate(clock clock.Clock, pods []*pod.Pod, capacity, demand, request *nodeinfo.Resource) float32 {
+func allocate(clock clock.Clock, pods []*pod.Pod, capacity, demand, request *nodeinfo.Resource) int32 {
 	cpuFairSharePolicy := whichSharePolicy(demand.MilliCPU, request.MilliCPU, capacity.MilliCPU)
 	memFairSharePolicy := whichSharePolicy(demand.Memory, request.Memory, capacity.Memory)
-	runningPods := float32(0.0)
+	runningPods := int32(0)
 	for _, pod := range pods {
 		if !pod.IsTerminated(clock) {
 			runningPods++
@@ -77,7 +82,7 @@ func allocate(clock clock.Clock, pods []*pod.Pod, capacity, demand, request *nod
 	if runningPods == 0 {
 		return 0.0
 	}
-	numSatifisedPods := float32(0.0)
+	numSatifisedPods := int32(0)
 	c := float32(capacity.MilliCPU)
 	d := float32(demand.MilliCPU)
 	r := float32(request.MilliCPU)
@@ -155,6 +160,9 @@ func allocate(clock clock.Clock, pods []*pod.Pod, capacity, demand, request *nod
 }
 
 // BuildMetrics builds a Metrics at the given clock.
+const parralel = true
+const workerNum = 32
+
 func BuildMetrics(clock clock.Clock, nodes map[string]*node.Node, queue queue.PodQueue, predictionPenalty float32) (Metrics, error) {
 	isTinyMetrics := false
 	metrics := make(map[string]interface{})
@@ -163,33 +171,84 @@ func BuildMetrics(clock clock.Clock, nodes map[string]*node.Node, queue queue.Po
 	nodesMetrics := make(map[string]node.Metrics)
 	podsMetrics := make(map[string]pod.Metrics)
 	QualityOfService := float32(1.0)
-	numPods := float32(0.0)
-	numSatifisedPods := float32(0.0)
-	for name, node := range nodes {
-		nodesMetrics[name] = node.Metrics(clock)
-		if !isTinyMetrics {
-			capacity := nodeinfo.NewResource(nodesMetrics[name].Allocatable)
-			demand := nodeinfo.NewResource(nodesMetrics[name].TotalResourceUsage)
-			request := nodeinfo.NewResource(nodesMetrics[name].TotalResourceRequest)
-			for _, pod := range node.PodList() {
-				if !pod.IsTerminated(clock) {
-					key, err := util.PodKey(pod.ToV1())
-					if err != nil {
-						return Metrics{}, err
+	numPods := int32(0)
+	numSatifisedPods := int32(0)
+
+	if parralel {
+		var nodesMetricsMutex = sync.RWMutex{}
+		var podsMetricsMutex = sync.RWMutex{}
+		nodeNames := make([]string, 0, len(nodes))
+		for k := range nodes {
+			nodeNames = append(nodeNames, k)
+		}
+		ctx, _ := context.WithCancel(context.Background())
+		workqueue.ParallelizeUntil(ctx, workerNum, len(nodes), func(i int) {
+			name := nodeNames[i]
+			node := nodes[name]
+			nodeMetrics := node.Metrics(clock)
+			nodesMetricsMutex.Lock()
+			nodesMetrics[name] = nodeMetrics
+			nodesMetricsMutex.Unlock()
+			if !isTinyMetrics {
+				capacity := nodeinfo.NewResource(nodeMetrics.Allocatable)
+				demand := nodeinfo.NewResource(nodeMetrics.TotalResourceUsage)
+				request := nodeinfo.NewResource(nodeMetrics.TotalResourceRequest)
+				for _, pod := range node.PodList() {
+					if !pod.IsTerminated(clock) {
+						key, err := util.PodKey(pod.ToV1())
+						if err != nil {
+							return
+						}
+						podMetrics := pod.Metrics(clock)
+						podsMetricsMutex.Lock()
+						podsMetrics[key] = podMetrics
+						podsMetricsMutex.Unlock()
 					}
-					podsMetrics[key] = pod.Metrics(clock)
+				}
+				numSatifisedPodsDelta := allocate(clock, node.PodList(), capacity, demand, request)
+				numSatifisedPods = atomic.AddInt32(&numSatifisedPods, numSatifisedPodsDelta)
+
+				for _, pod := range node.PodList() {
+					if !pod.IsTerminated(clock) {
+						key, err := util.PodKey(pod.ToV1())
+						if err != nil {
+							return
+						}
+						podsMetricsMutex.Lock()
+						podsMetrics[key] = *pod.CurrentMetrics
+						podsMetricsMutex.Unlock()
+						numPods = atomic.AddInt32(&numPods, 1)
+					}
 				}
 			}
-			numSatifisedPods += allocate(clock, node.PodList(), capacity, demand, request)
-
-			for _, pod := range node.PodList() {
-				if !pod.IsTerminated(clock) {
-					key, err := util.PodKey(pod.ToV1())
-					if err != nil {
-						return Metrics{}, err
+		})
+	} else {
+		for name, node := range nodes {
+			nodesMetrics[name] = node.Metrics(clock)
+			if !isTinyMetrics {
+				capacity := nodeinfo.NewResource(nodesMetrics[name].Allocatable)
+				demand := nodeinfo.NewResource(nodesMetrics[name].TotalResourceUsage)
+				request := nodeinfo.NewResource(nodesMetrics[name].TotalResourceRequest)
+				for _, pod := range node.PodList() {
+					if !pod.IsTerminated(clock) {
+						key, err := util.PodKey(pod.ToV1())
+						if err != nil {
+							return Metrics{}, err
+						}
+						podsMetrics[key] = pod.Metrics(clock)
 					}
-					podsMetrics[key] = *pod.CurrentMetrics
-					numPods++
+				}
+				numSatifisedPods += allocate(clock, node.PodList(), capacity, demand, request)
+
+				for _, pod := range node.PodList() {
+					if !pod.IsTerminated(clock) {
+						key, err := util.PodKey(pod.ToV1())
+						if err != nil {
+							return Metrics{}, err
+						}
+						podsMetrics[key] = *pod.CurrentMetrics
+						numPods++
+					}
 				}
 			}
 		}
@@ -197,7 +256,7 @@ func BuildMetrics(clock clock.Clock, nodes map[string]*node.Node, queue queue.Po
 	if numPods == 0 {
 		QualityOfService = 1.0
 	} else {
-		QualityOfService = numSatifisedPods / numPods
+		QualityOfService = float32(numSatifisedPods) / float32(numPods)
 	}
 
 	metrics[NodesMetricsKey] = nodesMetrics

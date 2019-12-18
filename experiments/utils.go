@@ -128,27 +128,16 @@ func ConvertTraceToPod(csvFile string, startTimestamp string, cpuFactor int, mem
 			c, _ = strconv.ParseFloat(line[0], 64)
 			m, _ = strconv.ParseFloat(line[3], 64)
 		}
-		if c > 1 {
-			log.L.Errorf("task %v's resource demands are too large cpu=%v mem=%v", csvFile, c, m)
-		} else {
+		if c <= 1 {
 			cpu = c
 		}
-		if m > 1 {
-			log.L.Errorf("task %v's resource demands are too large cpu=%v mem=%v", csvFile, c, m)
-		} else {
+		if m <= 1 {
 			mem = m
 		}
 
 		cpuUsage := int(cpu * float64(cpuFactor))
 		memusage := int(mem * float64(memFactor))
-		if cpuUsage > requestCpu {
-			log.L.Errorf("task %v's resource demands are too large cpuUsage=%v requestCpu=%v", csvFile, cpuUsage, requestCpu)
-		}
-		if memusage > requestMem {
-			log.L.Errorf("task %v's resource demands are too large memusage=%v requestMem=%v", csvFile, memusage, requestMem)
-		} else {
-			mem = m
-		}
+
 		phaseLen := (end - start) / MICRO_SECONDS
 		taskLast += phaseLen
 		isStop := false

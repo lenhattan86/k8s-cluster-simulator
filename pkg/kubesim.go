@@ -162,7 +162,7 @@ func (k *KubeSim) Run(ctx context.Context) error {
 	scheduler.GlobalMetrics = met
 
 	submitterAddedEver := len(k.submitters) > 0
-
+	startKube := time.Now()
 	for {
 		if k.toTerminate(submitterAddedEver) {
 			log.L.Debug("Terminate KubeSim")
@@ -237,6 +237,8 @@ func (k *KubeSim) Run(ctx context.Context) error {
 			k.clock = k.clock.Add(k.tick)
 		}
 	}
+	lapseKube := time.Since(startKube)
+	scheduler.TimingMap["kubesim"] = lapseKube.Microseconds()
 
 	log.L.Infof("TimingMap : %v", scheduler.TimingMap)
 
