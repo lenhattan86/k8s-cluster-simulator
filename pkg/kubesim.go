@@ -195,7 +195,7 @@ func (k *KubeSim) Run(ctx context.Context) error {
 				return err
 			}
 			lapse := time.Since(start)
-			if _, ok := scheduler.TimingMap["k.schedule()"]; ok {
+			if _, ok := scheduler.TimingMap["k.schedule()"]; !ok {
 				scheduler.TimingMap["k.schedule()"] = lapse.Microseconds()
 			} else {
 				scheduler.TimingMap["k.schedule()"] += lapse.Microseconds()
@@ -208,7 +208,7 @@ func (k *KubeSim) Run(ctx context.Context) error {
 				return err
 			}
 			lapse = time.Since(start)
-			if _, ok := scheduler.TimingMap["metrics.BuildMetrics"]; ok {
+			if _, ok := scheduler.TimingMap["metrics.BuildMetrics"]; !ok {
 				scheduler.TimingMap["metrics.BuildMetrics"] = lapse.Microseconds()
 			} else {
 				scheduler.TimingMap["metrics.BuildMetrics"] += lapse.Microseconds()
@@ -218,6 +218,7 @@ func (k *KubeSim) Run(ctx context.Context) error {
 			scheduler.NodeMetricsMap = scheduler.Estimate(k.nodeNames)
 			scheduler.NodeMetricsCache = scheduler.NodeMetricsMap
 
+			start = time.Now()
 			if k.clock.Sub(preMetricsClock) >= k.metricsTick {
 				preMetricsClock = k.clock
 				if err = k.writeMetrics(&met); err != nil {
@@ -225,6 +226,12 @@ func (k *KubeSim) Run(ctx context.Context) error {
 				}
 
 				k.gcTerminatedPodsInNodes()
+			}
+			lapse = time.Since(start)
+			if _, ok := scheduler.TimingMap["k.writeMetrics"]; !ok {
+				scheduler.TimingMap["k.writeMetrics"] = lapse.Microseconds()
+			} else {
+				scheduler.TimingMap["k.writeMetrics"] += lapse.Microseconds()
 			}
 
 			k.clock = k.clock.Add(k.tick)

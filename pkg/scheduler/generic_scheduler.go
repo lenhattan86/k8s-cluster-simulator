@@ -196,7 +196,7 @@ func (sched *GenericScheduler) scheduleOne(
 		return result, err
 	}
 	lapse := time.Since(start)
-	if _, ok := TimingMap["sched.filter"]; ok {
+	if _, ok := TimingMap["sched.filter"]; !ok {
 		TimingMap["sched.filter"] = lapse.Microseconds()
 	} else {
 		TimingMap["sched.filter"] += lapse.Microseconds()
@@ -221,7 +221,7 @@ func (sched *GenericScheduler) scheduleOne(
 	start = time.Now()
 	prios, err := sched.prioritize(pod, nodesFiltered, nodeInfoMap, podQueue)
 	lapse = time.Since(start)
-	if _, ok := TimingMap["sched.prioritize"]; ok {
+	if _, ok := TimingMap["sched.prioritize"]; !ok {
 		TimingMap["sched.prioritize"] = lapse.Microseconds()
 	} else {
 		TimingMap["sched.prioritize"] += lapse.Microseconds()
