@@ -70,7 +70,7 @@ func min(a, b int64) int64 {
 	return b
 }
 
-func allocate(clock clock.Clock, pods []*pod.Pod, capacity, demand, request *nodeinfo.Resource) int32 {
+func allocate(clock clock.Clock, pods []*pod.Pod, capacity, demand, request *nodeinfo.Resource) (int32, int32) {
 	cpuFairSharePolicy := whichSharePolicy(demand.MilliCPU, request.MilliCPU, capacity.MilliCPU)
 	memFairSharePolicy := whichSharePolicy(demand.Memory, request.Memory, capacity.Memory)
 	runningPods := int32(0)
@@ -80,7 +80,7 @@ func allocate(clock clock.Clock, pods []*pod.Pod, capacity, demand, request *nod
 		}
 	}
 	if runningPods == 0 {
-		return 0.0
+		return 0, 0
 	}
 	numSatifisedPods := int32(0)
 	c := float32(capacity.MilliCPU)
@@ -111,12 +111,11 @@ func allocate(clock clock.Clock, pods []*pod.Pod, capacity, demand, request *nod
 				pRequest := nodeinfo.NewResource(pod.CurrentMetrics.ResourceRequest)
 
 				extra := pUsage.MilliCPU - pAllocation.MilliCPU
-				if pUsage.MilliCPU <= pAllocation.MilliCPU || pRequest.MilliCPU <= pAllocation.MilliCPU {
-					// &&	(pUsage.Memory <= pAllocation.Memory || pRequest.Memory <= pAllocation.Memory)
-					numSatifisedPods++
-				}
 				pAllocation.MilliCPU += int64(fairShare * float32(extra))
 				pod.CurrentMetrics.ResourceAllocation = pAllocation.ResourceList()
+				if pUsage.MilliCPU <= pAllocation.MilliCPU || pRequest.MilliCPU <= pAllocation.MilliCPU {
+					numSatifisedPods++
+				}
 				// fmt.Printf("ResourceAllocation: %v \n", pod.CurrentMetrics.ResourceAllocation)
 				// fmt.Printf("pAllocation: %v \n", pAllocation)
 			}
@@ -156,12 +155,12 @@ func allocate(clock clock.Clock, pods []*pod.Pod, capacity, demand, request *nod
 			}
 		}
 	}
-	return numSatifisedPods
+	return numSatifisedPods, runningPods
 }
 
 // BuildMetrics builds a Metrics at the given clock.
 const parralel = true
-const workerNum = 32
+const workerNum = 16
 
 func BuildMetrics(clock clock.Clock, nodes map[string]*node.Node, queue queue.PodQueue, predictionPenalty float32) (Metrics, error) {
 	isTinyMetrics := false
@@ -205,21 +204,9 @@ func BuildMetrics(clock clock.Clock, nodes map[string]*node.Node, queue queue.Po
 						podsMetricsMutex.Unlock()
 					}
 				}
-				numSatifisedPodsDelta := allocate(clock, node.PodList(), capacity, demand, request)
-				numSatifisedPods = atomic.AddInt32(&numSatifisedPods, numSatifisedPodsDelta)
-
-				for _, pod := range node.PodList() {
-					if !pod.IsTerminated(clock) {
-						key, err := util.PodKey(pod.ToV1())
-						if err != nil {
-							return
-						}
-						podsMetricsMutex.Lock()
-						podsMetrics[key] = *pod.CurrentMetrics
-						podsMetricsMutex.Unlock()
-						numPods = atomic.AddInt32(&numPods, 1)
-					}
-				}
+				delta1, delta2 := allocate(clock, node.PodList(), capacity, demand, request)
+				numSatifisedPods = atomic.AddInt32(&numSatifisedPods, delta1)
+				numPods = atomic.AddInt32(&numPods, delta2)
 			}
 		})
 	} else {
@@ -238,7 +225,9 @@ func BuildMetrics(clock clock.Clock, nodes map[string]*node.Node, queue queue.Po
 						podsMetrics[key] = pod.Metrics(clock)
 					}
 				}
-				numSatifisedPods += allocate(clock, node.PodList(), capacity, demand, request)
+				delta1, delta2 := allocate(clock, node.PodList(), capacity, demand, request)
+				numSatifisedPods += delta1
+				numPods += delta2
 
 				for _, pod := range node.PodList() {
 					if !pod.IsTerminated(clock) {
