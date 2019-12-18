@@ -17,6 +17,7 @@ package scheduler
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/containerd/containerd/log"
 	v1 "k8s.io/api/core/v1"
@@ -98,7 +99,14 @@ func (sched *GenericScheduler) Schedule(
 		}
 		log.L.Debugf("Trying to schedule pod %s", podKey)
 		// ... try to bind the pod to a node.
+		start := time.Now()
 		result, err := sched.scheduleOne(pod, nodeLister, nodeInfoMap, pendingPods)
+		lapse := time.Since(start)
+		if _, ok := TimingMap["sched.scheduleOne"]; ok {
+			TimingMap["sched.scheduleOne"] = lapse.Microseconds()
+		} else {
+			TimingMap["sched.scheduleOne"] += lapse.Microseconds()
+		}
 
 		if err != nil {
 			updatePodStatusSchedulingFailure(clock, pod, err)
@@ -182,9 +190,16 @@ func (sched *GenericScheduler) scheduleOne(
 	}
 
 	// Filter out nodes that cannot accommodate the pod.
+	start := time.Now()
 	nodesFiltered, failedPredicateMap, err := sched.filter(pod, nodes, nodeInfoMap, podQueue)
 	if err != nil {
 		return result, err
+	}
+	lapse := time.Since(start)
+	if _, ok := TimingMap["sched.filter"]; ok {
+		TimingMap["sched.filter"] = lapse.Microseconds()
+	} else {
+		TimingMap["sched.filter"] += lapse.Microseconds()
 	}
 
 	switch len(nodesFiltered) {
@@ -203,7 +218,15 @@ func (sched *GenericScheduler) scheduleOne(
 	}
 
 	// Prioritize nodes that have passed the filtering phase.
+	start = time.Now()
 	prios, err := sched.prioritize(pod, nodesFiltered, nodeInfoMap, podQueue)
+	lapse = time.Since(start)
+	if _, ok := TimingMap["sched.prioritize"]; ok {
+		TimingMap["sched.prioritize"] = lapse.Microseconds()
+	} else {
+		TimingMap["sched.prioritize"] += lapse.Microseconds()
+	}
+
 	if err != nil {
 		return result, err
 	}

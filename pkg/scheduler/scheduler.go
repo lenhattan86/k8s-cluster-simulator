@@ -29,6 +29,7 @@ var GlobalMetrics metrics.Metrics
 var NodeResource metrics.Metrics
 var NodeMetricsMap = make(map[string]*NodeMetrics)
 var NodeMetricsCache = make(map[string]*NodeMetrics)
+var TimingMap = make(map[string]int64)
 
 var PenaltyMap = make(map[string]float32)
 var PenaltyTiming = make(map[string]int)

@@ -190,15 +190,30 @@ func (k *KubeSim) Run(ctx context.Context) error {
 				return err
 			}
 
+			start := time.Now()
 			if k.schedule() != nil {
 				return err
 			}
+			lapse := time.Since(start)
+			if _, ok := scheduler.TimingMap["k.schedule()"]; ok {
+				scheduler.TimingMap["k.schedule()"] = lapse.Microseconds()
+			} else {
+				scheduler.TimingMap["k.schedule()"] += lapse.Microseconds()
+			}
 
 			// Rebuild metrics every tick for submitters to use.
+			start = time.Now()
 			met, err = metrics.BuildMetrics(k.clock, k.nodes, k.pendingPods, scheduler.PredictionPenalty)
 			if err != nil {
 				return err
 			}
+			lapse = time.Since(start)
+			if _, ok := scheduler.TimingMap["metrics.BuildMetrics"]; ok {
+				scheduler.TimingMap["metrics.BuildMetrics"] = lapse.Microseconds()
+			} else {
+				scheduler.TimingMap["metrics.BuildMetrics"] += lapse.Microseconds()
+			}
+
 			scheduler.GlobalMetrics = met
 			scheduler.NodeMetricsMap = scheduler.Estimate(k.nodeNames)
 			scheduler.NodeMetricsCache = scheduler.NodeMetricsMap
@@ -215,6 +230,8 @@ func (k *KubeSim) Run(ctx context.Context) error {
 			k.clock = k.clock.Add(k.tick)
 		}
 	}
+
+	log.L.Infof("TimingMap : %v", scheduler.TimingMap)
 
 	return nil
 }
