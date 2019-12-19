@@ -39,9 +39,9 @@ then
     tick=60
     metricsTick=60
 else
-    nodeNum=10
-    totalPodNumber=1000
-    targetNum=100
+    nodeNum=1
+    totalPodNumber=2
+    targetNum=2
     start="2019-01-01T00:00:00+09:00"
     end="2019-01-01T01:00:00+09:00"
     pathToTrace="/ssd/projects/google-trace-data/task-res"
@@ -99,9 +99,9 @@ else
     # runSim $GENERIC true false
     # echo "Generating workload took $SECONDS seconds"
 
-    # SECONDS=0 
-	# runSim $WORST_FIT false false
-    # echo "$WORST_FIT took $SECONDS seconds"
+    SECONDS=0 
+	runSim $WORST_FIT false false
+    echo "$WORST_FIT took $SECONDS seconds"
 
     SECONDS=0 
     runSim $OVER_SUB false false

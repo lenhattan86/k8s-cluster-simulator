@@ -92,14 +92,22 @@ func Monitor(nodeInfoMap map[string]*nodeinfo.NodeInfo) map[string]*NodeMetrics 
 	return nodeMetricsMap
 }
 
+func max(a, b float32) float32 {
+	if a > b {
+		return a
+	}
+	return b
+}
+
 // Estimate predict resource usage
 func Estimate(nodeNames []string) map[string]*NodeMetrics {
-	// monitorMap := monitor(nodeInfoMap)
-	prevQoS := GlobalMetrics[metrics.QueueMetricsKey].(queue.Metrics).QualityOfService
-	if prevQoS < TargetQoS {
-		PredictionPenalty = PredictionPenalty / PenaltyUpdate
-	} else if prevQoS > TargetQoS {
-		PredictionPenalty = PredictionPenalty * PenaltyUpdate
+	if GlobalMetrics[metrics.QueueMetricsKey].(queue.Metrics).PendingPodsNum > 0 {
+		prevQoS := GlobalMetrics[metrics.QueueMetricsKey].(queue.Metrics).QualityOfService
+		if prevQoS < TargetQoS {
+			PredictionPenalty = max(PredictionPenalty/PenaltyUpdate, 1.0)
+		} else if prevQoS > TargetQoS {
+			PredictionPenalty = max(PredictionPenalty*PenaltyUpdate, 1.0)
+		}
 	}
 
 	nodeMetricsMap := make(map[string]*NodeMetrics)

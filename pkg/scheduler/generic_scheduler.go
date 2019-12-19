@@ -274,11 +274,18 @@ func (sched *GenericScheduler) filter(
 		log.L.Debugf("Plugins filtered nodes %v", nodeNames)
 	}
 
-	// Extenders
 	if len(filtered) > 0 && len(sched.extenders) > 0 {
 		for _, extender := range sched.extenders {
 			var err error
+			// Extenders
+			start := time.Now()
 			filtered, err = extender.filter(pod, filtered, nodeInfoMap, failedPredicateMap)
+			lapse := time.Since(start)
+			if _, ok := TimingMap["extender.filter"]; !ok {
+				TimingMap["extender.filter"] = lapse.Microseconds()
+			} else {
+				TimingMap["extender.filter"] += lapse.Microseconds()
+			}
 			if err != nil {
 				return []*v1.Node{}, core.FailedPredicateMap{}, err
 			}
@@ -353,7 +360,14 @@ func (sched *GenericScheduler) prioritize(
 	if len(sched.extenders) > 0 {
 		prioMap := map[string]int{}
 		for _, extender := range sched.extenders {
+			start := time.Now()
 			extender.prioritize(pod, filteredNodes, prioMap)
+			lapse := time.Since(start)
+			if _, ok := TimingMap["extender.prioritize"]; !ok {
+				TimingMap["extender.prioritize"] = lapse.Microseconds()
+			} else {
+				TimingMap["extender.prioritize"] += lapse.Microseconds()
+			}
 		}
 
 		for i, prio := range prioList {
