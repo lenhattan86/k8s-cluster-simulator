@@ -47,7 +47,7 @@ const (
 )
 
 func whichSharePolicy(demand, request, capacity int64) int {
-	res := 0
+	res := 0 // allocaton = demand. (demand <= capacity.)
 	if demand > capacity && request <= capacity {
 		res = 1
 	} else if demand > capacity && request > capacity {
@@ -74,90 +74,101 @@ func allocate(clock clock.Clock, pods []*pod.Pod, capacity, demand, request *nod
 
 	cpuFairSharePolicy := whichSharePolicy(demand.MilliCPU, request.MilliCPU, capacity.MilliCPU)
 	memFairSharePolicy := whichSharePolicy(demand.Memory, request.Memory, capacity.Memory)
-	runningPods := int32(0)
+
+	runingPods := make([]*pod.Pod, 0, len(pods))
 	for _, pod := range pods {
 		if !pod.IsTerminated(clock) {
-			runningPods++
+			runingPods = append(runingPods, pod)
 		}
 	}
-	if runningPods == 0 {
+	numRunningPods := int32(len(runingPods))
+	if numRunningPods == 0 {
 		return 0, 0
 	}
 	numSatifisedPods := int32(0)
-	c := float32(capacity.MilliCPU)
-	d := float32(demand.MilliCPU)
-	r := float32(request.MilliCPU)
+	c := capacity.MilliCPU
+	d := demand.MilliCPU
+	r := request.MilliCPU
 	// cpu
 	if cpuFairSharePolicy > 0 {
 		// guarantee
-		fairShare := float32(c) / float32(d)
-		for _, pod := range pods {
-			if !pod.IsTerminated(clock) {
+		// fairShare := float32(c) / float32(d)
+		if d > 0 {
+			C := c
+			R := r
+			for _, pod := range runingPods {
 				pRequest := nodeinfo.NewResource(pod.CurrentMetrics.ResourceRequest)
 				pUsage := nodeinfo.NewResource(pod.CurrentMetrics.ResourceUsage)
-				guarantee := min(int64(fairShare*float32(pRequest.Memory)), pUsage.Memory)
-				c -= float32(guarantee)
-				d -= float32(guarantee)
+				guarantee := min(C*pRequest.MilliCPU/R, pUsage.MilliCPU)
+				c -= guarantee
+				d -= guarantee
 				pAllocation := nodeinfo.NewResource(pod.CurrentMetrics.ResourceAllocation)
 				pAllocation.MilliCPU = int64(guarantee)
 				pod.CurrentMetrics.ResourceAllocation = pAllocation.ResourceList()
 			}
 		}
 
-		fairShare = float32(c) / float32(d)
-		for _, pod := range pods {
-			if !pod.IsTerminated(clock) {
+		// fairShare = float32(c) / float32(d)
+		if d > 0 {
+			C := c
+			D := d
+			for _, pod := range runingPods {
 				pUsage := nodeinfo.NewResource(pod.CurrentMetrics.ResourceUsage)
 				pAllocation := nodeinfo.NewResource(pod.CurrentMetrics.ResourceAllocation)
-				pRequest := nodeinfo.NewResource(pod.CurrentMetrics.ResourceRequest)
-
-				extra := pUsage.MilliCPU - pAllocation.MilliCPU
-				pAllocation.MilliCPU += int64(fairShare * float32(extra))
+				extra := max(pUsage.MilliCPU-pAllocation.MilliCPU, 0)
+				pAllocation.MilliCPU += int64(C * extra / D)
 				pod.CurrentMetrics.ResourceAllocation = pAllocation.ResourceList()
-				if pUsage.MilliCPU <= pAllocation.MilliCPU || pRequest.MilliCPU <= pAllocation.MilliCPU {
-					numSatifisedPods++
-				}
-				// fmt.Printf("ResourceAllocation: %v \n", pod.CurrentMetrics.ResourceAllocation)
-				// fmt.Printf("pAllocation: %v \n", pAllocation)
 			}
 		}
-	} else {
-		numSatifisedPods = runningPods
 	}
 
-	c = float32(capacity.MilliCPU)
-	d = float32(demand.MilliCPU)
-	r = float32(request.MilliCPU)
+	c = capacity.Memory
+	d = demand.Memory
+	r = request.Memory
 	// memory
 	if memFairSharePolicy > 0 {
-		fairShare := float32(c) / float32(r)
 		// guarantee
-		for _, pod := range pods {
-			if !pod.IsTerminated(clock) {
+		// fairShare := float32(c) / float32(d)
+		if d > 0 {
+			C := c
+			R := r
+			for _, pod := range runingPods {
 				pRequest := nodeinfo.NewResource(pod.CurrentMetrics.ResourceRequest)
 				pUsage := nodeinfo.NewResource(pod.CurrentMetrics.ResourceUsage)
-				guarantee := min(int64(fairShare*float32(pRequest.Memory)), pUsage.Memory)
-				c -= float32(guarantee)
-				d -= float32(guarantee)
+				guarantee := min(C*pRequest.Memory/R, pUsage.Memory)
+				c -= guarantee
+				d -= guarantee
 				pAllocation := nodeinfo.NewResource(pod.CurrentMetrics.ResourceAllocation)
-				pAllocation.Memory = guarantee
+				pAllocation.Memory = int64(guarantee)
 				pod.CurrentMetrics.ResourceAllocation = pAllocation.ResourceList()
 			}
 		}
-		// share remaining
-		fairShare = float32(c) / float32(d)
-		for _, pod := range pods {
-			if !pod.IsTerminated(clock) {
+
+		// fairShare = float32(c) / float32(d)
+		if d > 0 {
+			C := c
+			D := d
+			for _, pod := range runingPods {
 				pUsage := nodeinfo.NewResource(pod.CurrentMetrics.ResourceUsage)
 				pAllocation := nodeinfo.NewResource(pod.CurrentMetrics.ResourceAllocation)
-				extra := pUsage.Memory - pAllocation.Memory
-				pAllocation.Memory += int64(fairShare * float32(extra))
+
+				extra := max(pUsage.Memory-pAllocation.Memory, 0)
+				pAllocation.Memory += int64(C * extra / D)
 				pod.CurrentMetrics.ResourceAllocation = pAllocation.ResourceList()
 			}
 		}
 	}
 
-	return numSatifisedPods, runningPods
+	for _, pod := range runingPods {
+		pUsage := nodeinfo.NewResource(pod.CurrentMetrics.ResourceUsage)
+		pAllocation := nodeinfo.NewResource(pod.CurrentMetrics.ResourceAllocation)
+		pRequest := nodeinfo.NewResource(pod.CurrentMetrics.ResourceRequest)
+		if pUsage.MilliCPU <= pAllocation.MilliCPU || pRequest.MilliCPU <= pAllocation.MilliCPU {
+			numSatifisedPods++
+		}
+	}
+
+	return numSatifisedPods, numRunningPods
 }
 
 // BuildMetrics builds a Metrics at the given clock.
