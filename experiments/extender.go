@@ -16,7 +16,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/scheduler"
@@ -132,7 +131,6 @@ func filterFitResource(args api.ExtenderArgs) api.ExtenderFilterResult {
 		}
 
 	}
-	fmt.Println("nodeNames: ", nodeNames)
 	return api.ExtenderFilterResult{
 		Nodes:       &nodeList,
 		NodeNames:   &nodeNames,
