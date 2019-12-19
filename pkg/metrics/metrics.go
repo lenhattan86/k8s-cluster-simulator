@@ -71,6 +71,7 @@ func min(a, b int64) int64 {
 }
 
 func allocate(clock clock.Clock, pods []*pod.Pod, capacity, demand, request *nodeinfo.Resource) (int32, int32) {
+
 	cpuFairSharePolicy := whichSharePolicy(demand.MilliCPU, request.MilliCPU, capacity.MilliCPU)
 	memFairSharePolicy := whichSharePolicy(demand.Memory, request.Memory, capacity.Memory)
 	runningPods := int32(0)
@@ -155,6 +156,7 @@ func allocate(clock clock.Clock, pods []*pod.Pod, capacity, demand, request *nod
 			}
 		}
 	}
+
 	return numSatifisedPods, runningPods
 }
 
@@ -205,8 +207,8 @@ func BuildMetrics(clock clock.Clock, nodes map[string]*node.Node, queue queue.Po
 					}
 				}
 				delta1, delta2 := allocate(clock, node.PodList(), capacity, demand, request)
-				numSatifisedPods = atomic.AddInt32(&numSatifisedPods, delta1)
-				numPods = atomic.AddInt32(&numPods, delta2)
+				atomic.AddInt32(&numSatifisedPods, delta1)
+				atomic.AddInt32(&numPods, delta2)
 			}
 		})
 	} else {
