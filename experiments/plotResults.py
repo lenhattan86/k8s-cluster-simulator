@@ -80,8 +80,11 @@ def loadLog(filepath) :
             nodeDict = data['Nodes']
             for nodeName, node in nodeDict.items():
                 cpuUsage = 0
+                memUsage = 0
                 cpuAllocatable = 0
-                cpuRequest = 0                
+                memAllocatable = 0
+                cpuRequest = 0    
+                memRequest = 0            
                 runningPodsNum = int(node['RunningPodsNum'])
 
                 usageDict = node['TotalResourceUsage']
