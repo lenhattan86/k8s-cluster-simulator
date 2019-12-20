@@ -163,7 +163,8 @@ func allocate(clock clock.Clock, pods []*pod.Pod, capacity, demand, request *nod
 		pUsage := nodeinfo.NewResource(pod.CurrentMetrics.ResourceUsage)
 		pAllocation := nodeinfo.NewResource(pod.CurrentMetrics.ResourceAllocation)
 		pRequest := nodeinfo.NewResource(pod.CurrentMetrics.ResourceRequest)
-		if pUsage.MilliCPU <= pAllocation.MilliCPU || pRequest.MilliCPU <= pAllocation.MilliCPU {
+		if (pUsage.MilliCPU <= pAllocation.MilliCPU || pRequest.MilliCPU <= pAllocation.MilliCPU) &&
+			(pUsage.Memory <= pAllocation.Memory || pRequest.Memory <= pAllocation.Memory) {
 			numSatifisedPods++
 		}
 	}

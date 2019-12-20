@@ -25,7 +25,7 @@ predictionPenalty=2
 targetQoS=0.99
 penaltyUpdate=0.99
 isDistributeTasks="false"
-isMultipleResource="false"
+isMultipleResource="true"
 
 if $isOfficial
 then
@@ -79,7 +79,6 @@ runSim(){
     --is-multiple-resource=$isMultipleResource \
     &> run_${1}.out
 }
-echo "running simulation"
 
 if $isOfficial
 then
@@ -89,9 +88,9 @@ then
 
     SECONDS=0 
     echo "running simulation"
-    runSim $WORST_FIT false false &
-    runSim $OVER_SUB false false &
     runSim $PROPOSED false false &
+    runSim $WORST_FIT false false
+    runSim $OVER_SUB false false &    
     wait
     echo "simulation took $SECONDS seconds"
 else
@@ -100,16 +99,12 @@ else
     # echo "Generating workload took $SECONDS seconds"
 
     SECONDS=0 
-	runSim $WORST_FIT false false
-    echo "$WORST_FIT took $SECONDS seconds"
-
-    SECONDS=0 
-    runSim $OVER_SUB false false
-    echo "$OVER_SUB took $SECONDS seconds"
-
-    SECONDS=0 
-    runSim $PROPOSED false false    
-    echo "$PROPOSED took $SECONDS seconds"
+    echo "running simulation"
+    runSim $PROPOSED false false &
+    runSim $WORST_FIT false false
+    runSim $OVER_SUB false false &    
+    wait
+    echo "simulation took $SECONDS seconds"
 fi
 
 

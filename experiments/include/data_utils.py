@@ -30,6 +30,18 @@ def read_machine_csv(f):
     res = (cUsages, cReqs, mUsages, mReqs, cCaps, mCaps)
     return res
 
+def read_machine_cap_csv(fp):
+    c = 0
+    m = 0
+    with open(fp) as f:
+        first_line = f.readline()
+        strs = first_line.split(",")
+        c = float(strs[0])
+        m = float(strs[1])
+
+    res = (c, m)
+    return res
+
 
 def read_task_csv(f):
     cols = ['startTime','endTime','cpuUsage','memUsage','diskUsage']
