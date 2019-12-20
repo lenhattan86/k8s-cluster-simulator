@@ -30,6 +30,7 @@ STR_MEM_GB = "Mem. (GB)"
 STR_NODES = "nodes"
 STR_QoS = "QoS"
 STR_Pred_Penalty = "Prediction Penalty"
+STR_CDF = "cdf"
 
 ## colors
 COLOR_CPU = "red"

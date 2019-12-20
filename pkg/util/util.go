@@ -64,6 +64,36 @@ func ResourceListSum(r1, r2 v1.ResourceList) v1.ResourceList {
 	return sum
 }
 
+// ResourceListMax returns the sum of two resource lists.
+func ResourceListMax(r1, r2 v1.ResourceList) v1.ResourceList {
+	max := r1.DeepCopy()
+	for r2Key, r2Val := range r2 {
+		if r1Val, ok := max[r2Key]; ok {
+			if r1Val.Cmp(r2Val) < 0 {
+				max[r2Key] = r2Val
+			}
+		} else {
+			max[r2Key] = r2Val
+		}
+	}
+	return max
+}
+
+// ResourceListMin returns the sum of two resource lists.
+func ResourceListMin(r1, r2 v1.ResourceList) v1.ResourceList {
+	max := r1.DeepCopy()
+	for r2Key, r2Val := range r2 {
+		if r1Val, ok := max[r2Key]; ok {
+			if r1Val.Cmp(r2Val) > 0 {
+				max[r2Key] = r2Val
+			}
+		} else {
+			max[r2Key] = r2Val
+		}
+	}
+	return max
+}
+
 func ResourceListMultiply(r1 v1.ResourceList, factor float32) v1.ResourceList {
 	res := r1.DeepCopy()
 	for r1Key, r1Val := range r1 {

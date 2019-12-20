@@ -10,8 +10,7 @@ ONE_SHOT="oneshot"
 WORST_FIT="worstfit"
 GENERIC="generic"
 
-oversub=2.0
-nodeNum=5000
+oversub=3.0
 cpuPerNode=64
 memPerNode=128
 
@@ -29,10 +28,10 @@ isMultipleResource="true"
 
 if $isOfficial
 then
-    nodeNum=5000
+    nodeNum=4000
     totalPodNumber=25000000
     start="2019-01-01T00:00:00+09:00"
-    end="2019-01-01T05:00:00+09:00"
+    end="2019-01-02T02:00:00+09:00"
     pathToTrace="/home/cc/google-data/tasks/tasks-res"
     pathToWorkload="/home/cc/google-data/workload"
     log_path="/home/cc/google-data/log"
@@ -89,7 +88,7 @@ then
     SECONDS=0 
     echo "running simulation"
     runSim $PROPOSED false false &
-    runSim $WORST_FIT false false
+    runSim $WORST_FIT false false &
     runSim $OVER_SUB false false &    
     wait
     echo "simulation took $SECONDS seconds"
@@ -101,7 +100,7 @@ else
     SECONDS=0 
     echo "running simulation"
     runSim $PROPOSED false false &
-    runSim $WORST_FIT false false
+    runSim $WORST_FIT false false &
     runSim $OVER_SUB false false &    
     wait
     echo "simulation took $SECONDS seconds"

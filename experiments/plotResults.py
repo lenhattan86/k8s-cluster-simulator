@@ -19,15 +19,16 @@ tick = 1
 cap = 64
 
 cpuStr = 'cpu'
+memStr = 'memory'
 show=False
 plotObj = True
 plotOverload = True
 plotTotalRequest = True
-plotTotalUsage = True
+plotTotalDemand = True
 plotOverbook = True
 plotQoS=True
 plotPredictionPenalty=True
-loads = [plotTotalUsage, True, False, plotOverload, plotOverbook, plotObj, plotTotalRequest, plotQoS, plotPredictionPenalty]
+loads = [plotTotalDemand, True, False, plotOverload, plotOverbook, plotObj, plotTotalRequest, plotQoS, plotPredictionPenalty]
 
 path = "./log"
 arg_len = len(sys.argv) - 1
@@ -40,9 +41,11 @@ def loadLog(filepath) :
     cpuUsages = []
     maxCpuUsages = []
     cpuRequests = []
+    memRequests = []
     memUsages = []
     gpuUsages = []
     cpuAllocatables = []
+    memAllocatables = []
     requests = []
     busyNodes = []
     overloadNodes = []
@@ -60,9 +63,13 @@ def loadLog(filepath) :
             overloadNode = 0
             overBookNode = 0
             totalCpuUsage = 0
-            totalCapacity = 0
+            totalMemUsage = 0
+            totalCpuCapacity = 0
+            totalMemCapacity = 0
             maxCpuUsage = 0
             totalCpuRequest = 0
+            totalMemRequest = 0
+            maxMemUsage = 0
 
             try:
                 data = json.loads(line)
@@ -84,23 +91,34 @@ def loadLog(filepath) :
                         totalCpuUsage = totalCpuUsage+ cpuUsage
                         if cpuUsage > maxCpuUsage:
                             maxCpuUsage = cpuUsage
+                    elif(rsName==memStr):
+                        memUsage = formatQuatity(usageDict[rsName])
+                        totalMemUsage = totalMemUsage+ memUsage
+                        if memUsage > maxMemUsage:
+                            maxMemUsage = memUsage
 
                 allocatableDict = node['Allocatable']    
                 for rsName in allocatableDict:
                     if(rsName==cpuStr):
                         cpuAllocatable = formatQuatity(allocatableDict[rsName])
-                        totalCapacity = totalCapacity + cpuAllocatable
+                        totalCpuCapacity = totalCpuCapacity + cpuAllocatable
+                    elif(rsName==memStr):
+                        memAllocatable = formatQuatity(allocatableDict[rsName])
+                        totalMemCapacity = totalMemCapacity + memAllocatable
                 
                 requestDict = node['TotalResourceRequest']    
                 for rsName in requestDict:
                     if(rsName==cpuStr):
                         cpuRequest = formatQuatity(requestDict[rsName])
                         totalCpuRequest = totalCpuRequest + cpuRequest
+                    elif(rsName==memStr):
+                        memRequest = formatQuatity(requestDict[rsName])
+                        totalMemRequest = totalMemRequest + memRequest
 
-                if(cpuUsage > cpuAllocatable):
+                if(cpuUsage > cpuAllocatable or memUsage > memAllocatable):
                     overloadNode = overloadNode+1
            
-                if(cpuRequest > cpuAllocatable):
+                if(cpuRequest > cpuAllocatable or memRequest > memAllocatable):
                     overBookNode = overBookNode +1
            
                 if(runningPodsNum > 0):
@@ -108,8 +126,10 @@ def loadLog(filepath) :
 
             if (loads[0]):
                 cpuUsages.append(totalCpuUsage)
+                memUsages.append(totalMemUsage)
             if (loads[1]):
-                cpuAllocatables.append(totalCapacity)
+                cpuAllocatables.append(totalCpuCapacity)
+                memAllocatables.append(totalMemCapacity)
             if (loads[2]):
                 busyNodes.append(busyNode)
             if (loads[3]):
@@ -120,6 +140,7 @@ def loadLog(filepath) :
                 maxCpuUsages.append(maxCpuUsage)
             if (loads[6]):
                 cpuRequests.append(totalCpuRequest)
+                memRequests.append(totalMemRequest)
 
             # Queue":{"PendingPodsNum":1,"QualityOfService":1,"PredictionPenalty":2.97}
             queue = data['Queue']
@@ -135,7 +156,7 @@ def loadLog(filepath) :
 
     fp.close()
 
-    return busyNodes, overloadNodes, overBookNodes, cpuUsages, cpuRequests, maxCpuUsages, cpuAllocatables, QoS, PredPenalty
+    return busyNodes, overloadNodes, overBookNodes, cpuUsages, memUsages, cpuRequests, maxCpuUsages, cpuAllocatables, memAllocatables, QoS, PredPenalty
 
 def formatQuatity(str):
     strArray = re.split('(\d+)', str)
@@ -156,20 +177,24 @@ busyNodes = []
 overloadNodes = []
 overbookNodes = []
 cpuUsages = []
+memUsages = []
 maxCpuUsages = []
 cpuAllocatables = []
+memAllocatables = []
 cpuRequests = []
 QoSs = []
 PredPenalties = []
 
 for m in methods:
-    b, ol, ob, u, ur, mu, a, q, p = loadLog(path+"/kubesim_"+m+".log")
+    b, ol, ob, u_cpu, u_mem, ur, mu, a_cpu,a_mem, q, p = loadLog(path+"/kubesim_"+m+".log")
     busyNodes.append(b)
     overloadNodes.append(ol)
     overbookNodes.append(ob)
-    cpuUsages.append(u)
+    cpuUsages.append(u_cpu)
+    memUsages.append(u_mem)
     maxCpuUsages.append(mu)
-    cpuAllocatables.append(a)
+    cpuAllocatables.append(a_cpu)
+    memAllocatables.append(a_mem)
     cpuRequests.append(ur)
     QoSs.append(q)
     PredPenalties.append(p)
@@ -216,7 +241,7 @@ if plotTotalRequest:
 
     fig.savefig(FIG_PATH+"/total-request.pdf", bbox_inches='tight')
 
-if plotTotalUsage:
+if plotTotalDemand:
     # Y_MAX = np.amax(cpuRequests)
     fig = plt.figure(figsize=FIG_ONE_COL)
     for i in range(methodsNum):
@@ -230,9 +255,25 @@ if plotTotalUsage:
     plt.xlabel(STR_TIME_MIN)
     plt.ylabel(STR_CPU_CORES)
     # plt.ylim(0,Y_MAX)
-    plt.suptitle("Total Cpu Usage")
+    plt.suptitle("Total Cpu Demand")
 
-    fig.savefig(FIG_PATH+"/total-usage.pdf", bbox_inches='tight')
+    fig.savefig(FIG_PATH+"/total-demand-cpu.pdf", bbox_inches='tight')
+
+    fig = plt.figure(figsize=FIG_ONE_COL)
+    for i in range(methodsNum):
+        plt.plot(range(0,len(memUsages[i])*tick,tick), memUsages[i])
+    
+    plt.plot(range(0,len(memAllocatables[0])*tick,tick), memAllocatables[0])
+    legends = methods
+    legends.append('capacity')
+
+    plt.legend(legends, loc='best')
+    plt.xlabel(STR_TIME_MIN)
+    plt.ylabel(STR_MEM_GB)
+    # plt.ylim(0,Y_MAX)
+    plt.suptitle("Total Memory Demand")
+
+    fig.savefig(FIG_PATH+"/total-demand-mem.pdf", bbox_inches='tight')
 
 ## plot performance: number of overload nodes.
 if plotOverload:
@@ -265,6 +306,7 @@ if plotOverbook:
 
 ## plot performance: number of overload nodes.
 if plotQoS:
+
     fig = plt.figure(figsize=FIG_ONE_COL)
     for i in range(methodsNum):
         plt.plot(range(0,len(QoSs[i])*tick,tick), QoSs[i])
@@ -276,6 +318,22 @@ if plotQoS:
     plt.ylim(0,1.1)
 
     fig.savefig(FIG_PATH+"/qos.pdf", bbox_inches='tight')
+    ##    
+    
+    ## plot figures   
+    fig = plt.figure(figsize=FIG_ONE_COL)
+    for i in range(methodsNum):
+        cdf = compute_cdf(numpy.array(QoSs[i]))
+        plt.plot(cdf.x, cdf.p)
+
+    legends = methods   
+    plt.legend(legends, loc='best')
+    plt.xlabel(STR_QoS)
+    plt.ylabel(STR_CDF)
+    plt.ylim(0,1)
+    plt.xlim(0,1)
+
+    fig.savefig(FIG_PATH+"/qos_cdf.pdf", bbox_inches='tight')
 
 if plotPredictionPenalty:
     fig = plt.figure(figsize=FIG_ONE_COL)

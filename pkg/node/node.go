@@ -32,12 +32,13 @@ type Node struct {
 
 // Metrics is a metrics of a Node at one point of time.
 type Metrics struct {
-	Allocatable          v1.ResourceList
-	RunningPodsNum       int64
-	TerminatingPodsNum   int64
-	FailedPodsNum        int64
-	TotalResourceRequest v1.ResourceList
-	TotalResourceUsage   v1.ResourceList
+	Allocatable             v1.ResourceList
+	RunningPodsNum          int64
+	TerminatingPodsNum      int64
+	FailedPodsNum           int64
+	TotalResourceRequest    v1.ResourceList
+	TotalResourceUsage      v1.ResourceList
+	TotalResourceAllocation v1.ResourceList
 }
 
 // NewNode creates a new Node with the given v1.Node.
@@ -67,12 +68,13 @@ func (node *Node) ToNodeInfo(clock clock.Clock) (*nodeinfo.NodeInfo, error) {
 // Metrics returns the Metrics of this Node at the given clock.
 func (node *Node) Metrics(clock clock.Clock) Metrics {
 	return Metrics{
-		Allocatable:          node.ToV1().Status.Allocatable,
-		RunningPodsNum:       node.runningPodsNum(clock),
-		TerminatingPodsNum:   node.terminatingPodsNum(clock),
-		FailedPodsNum:        node.bindingFailedPodsNum(),
-		TotalResourceRequest: node.totalResourceRequest(clock),
-		TotalResourceUsage:   node.totalResourceUsage(clock),
+		Allocatable:             node.ToV1().Status.Allocatable,
+		RunningPodsNum:          node.runningPodsNum(clock),
+		TerminatingPodsNum:      node.terminatingPodsNum(clock),
+		FailedPodsNum:           node.bindingFailedPodsNum(),
+		TotalResourceRequest:    node.totalResourceRequest(clock),
+		TotalResourceUsage:      node.totalResourceUsage(clock),
+		TotalResourceAllocation: resourceAllocation,
 	}
 }
 
@@ -236,5 +238,8 @@ func (node *Node) totalResourceUsage(clock clock.Clock) v1.ResourceList {
 		}
 	}
 
+	resourceAllocation = util.ResourceListMin(total, node.ToV1().Status.Allocatable)
 	return total
 }
+
+var resourceAllocation = v1.ResourceList{}
