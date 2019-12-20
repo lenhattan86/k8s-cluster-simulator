@@ -20,6 +20,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/util"
+	kutil "k8s.io/kubernetes/pkg/scheduler/util"
 )
 
 // PriorityQueue stores pods in a priority queue.
@@ -37,7 +38,9 @@ type Compare = func(pod0, pod1 *v1.Pod) bool
 
 // NewPriorityQueue creates a new PriorityQueue with DefaultComparator.
 func NewPriorityQueue() *PriorityQueue {
-	return NewPriorityQueueWithComparator(DefaultComparator)
+	// return NewPriorityQueueWithComparator(DefaultComparator)
+	// TanLe: increase utilization when scheduling.
+	return NewPriorityQueueWithComparator(ResourceRequestComparator)
 }
 
 // NewPriorityQueueWithComparator creates a new PriorityQueue with the given comparator.
@@ -249,6 +252,12 @@ func DefaultComparator(pod0, pod1 *v1.Pod) bool {
 	ts1 := podTimestamp(pod1)
 
 	return (prio0 > prio1) || (prio0 == prio1 && ts0.Before(ts1))
+}
+
+func ResourceRequestComparator(pod0, pod1 *v1.Pod) bool {
+	r0 := kutil.GetResourceRequest(pod0)
+	r1 := kutil.GetResourceRequest(pod1)
+	return r0.Memory < r1.Memory
 }
 
 func newWithItems(items map[string]*item, comparator Compare) *PriorityQueue {
