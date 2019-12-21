@@ -42,7 +42,7 @@ sudo pip install tensorflow; \
 sudo pip3 install tensorflow
 
 #
-sudo apt install golang-go
+# sudo apt install golang-go
 
 ## download code
 cd ~/ ; \

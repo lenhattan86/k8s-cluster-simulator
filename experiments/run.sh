@@ -28,10 +28,10 @@ isMultipleResource="true"
 
 if $isOfficial
 then
-    nodeNum=4000
+    nodeNum=3000
     totalPodNumber=25000000
     start="2019-01-01T00:00:00+09:00"
-    end="2019-01-02T02:00:00+09:00"
+    end="2019-01-02T06:00:00+09:00"
     pathToTrace="/home/cc/google-data/tasks/tasks-res"
     pathToWorkload="/home/cc/google-data/workload"
     log_path="/home/cc/google-data/log"

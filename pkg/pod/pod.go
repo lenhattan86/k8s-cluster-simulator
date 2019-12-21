@@ -168,7 +168,6 @@ func (pod *Pod) ResourceUsage(clock clock.Clock) v1.ResourceList {
 		phase := pod.spec[stop]
 		pod.spec[stop].seconds = phaseDurationAcc
 		pod.spec = pod.spec[stop:]
-		log.L.Infof("pod.spec %v", pod.spec)
 		return phase.resourceUsage
 	}
 
