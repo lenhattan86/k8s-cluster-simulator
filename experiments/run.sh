@@ -93,9 +93,9 @@ then
     wait
     echo "simulation took $SECONDS seconds"
 else
-    # SECONDS=0
-    # runSim $GENERIC true false
-    # echo "Generating workload took $SECONDS seconds"
+    SECONDS=0
+    runSim $GENERIC true false
+    echo "Generating workload took $SECONDS seconds"
 
     SECONDS=0 
     echo "running simulation"

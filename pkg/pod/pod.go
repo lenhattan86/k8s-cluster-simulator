@@ -113,11 +113,12 @@ func (pod *Pod) ToV1() *v1.Pod {
 
 // Metrics returns the Metrics of this Pod at the given clock.
 func (pod *Pod) Metrics(clock clock.Clock) Metrics {
+	ResourceUsage := pod.ResourceUsage(clock)
 	metrics := Metrics{
 		ResourceRequest:    pod.TotalResourceRequests(),
 		ResourceLimit:      pod.TotalResourceLimits(),
-		ResourceUsage:      pod.ResourceUsage(clock),
-		ResourceAllocation: pod.ResourceUsage(clock),
+		ResourceUsage:      ResourceUsage,
+		ResourceAllocation: ResourceUsage,
 
 		BoundAt:         pod.boundAt,
 		Node:            pod.node,
@@ -153,11 +154,22 @@ func (pod *Pod) ResourceUsage(clock clock.Clock) v1.ResourceList {
 
 	executedSeconds := int32(pod.executedDuration(clock).Seconds())
 	phaseDurationAcc := int32(0)
-	for _, phase := range pod.spec {
+	stop := -1
+	for i, phase := range pod.spec {
 		phaseDurationAcc += phase.seconds
 		if executedSeconds < phaseDurationAcc {
-			return phase.resourceUsage
+			stop = i
+			break
+
 		}
+	}
+	//tanle delete past phases
+	if stop >= 0 {
+		phase := pod.spec[stop]
+		pod.spec[stop].seconds = phaseDurationAcc
+		pod.spec = pod.spec[stop:]
+		log.L.Infof("pod.spec %v", pod.spec)
+		return phase.resourceUsage
 	}
 
 	log.L.Panic("Unreachable code in pod.ResourceUsage()")
