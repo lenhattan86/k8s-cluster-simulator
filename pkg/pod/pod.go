@@ -133,8 +133,8 @@ func NewPod(pod *v1.Pod, boundAt clock.Clock, status Status, node string, curren
 	path := parsePath(pod)
 	newLoadPhase := loadPhase + LOAD_PHASE_CACHE
 	if path != "" {
-		if loadPhase > numPhase {
-			loadPhase = numPhase
+		if newLoadPhase > numPhase {
+			newLoadPhase = numPhase
 		}
 		if currentSpec == nil {
 			spec = spec[:newLoadPhase]
