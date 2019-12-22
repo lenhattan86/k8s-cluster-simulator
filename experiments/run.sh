@@ -38,9 +38,9 @@ then
     tick=60
     metricsTick=60
 else
-    nodeNum=1
-    totalPodNumber=2
-    targetNum=2
+    nodeNum=3
+    totalPodNumber=40
+    targetNum=40
     start="2019-01-01T00:00:00+09:00"
     end="2019-01-01T01:00:00+09:00"
     pathToTrace="/ssd/projects/google-trace-data/task-res"

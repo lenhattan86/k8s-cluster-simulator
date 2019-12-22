@@ -16,7 +16,6 @@ package main
 
 import (
 	"context"
-	"sync"
 
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/scheduler"
 	v1 "k8s.io/api/core/v1"
@@ -92,28 +91,30 @@ func filterFitResource(args api.ExtenderArgs) api.ExtenderFilterResult {
 	failedNodesMap := make(map[string]string)
 	request := kutil.GetResourceRequest(args.Pod)
 	if parralel {
-		var predicateResultLock sync.Mutex
 		ctx, _ := context.WithCancel(context.Background())
 		// Run predicate plugins in parallel along nodes.
+		filtered := make([]string, len(*args.NodeNames))
 		workqueue.ParallelizeUntil(ctx, workerNum, int(len(*args.NodeNames)), func(i int) {
 			name := (*args.NodeNames)[i]
 			if _, ok := scheduler.NodeMetricsCache[name]; ok {
 				usage := scheduler.NodeMetricsCache[name].Usage
 				capacity := scheduler.NodeMetricsCache[name].Allocatable
 
-				predicateResultLock.Lock()
-				defer predicateResultLock.Unlock()
 				if (capacity.MilliCPU-usage.MilliCPU-request.MilliCPU) < 0 || (capacity.Memory-usage.Memory-request.Memory) < 0 {
 					failedNodesMap[name] = "This node's usage is too high"
 				} else {
-					nodeNames = append(nodeNames, name)
+					filtered[i] = name
 				}
 			} else {
-				predicateResultLock.Lock()
-				defer predicateResultLock.Unlock()
-				nodeNames = append(nodeNames, name)
+				filtered[i] = name
+
 			}
 		})
+		for _, name := range filtered {
+			if name != "" {
+				nodeNames = append(nodeNames, name)
+			}
+		}
 	} else {
 		request := kutil.GetResourceRequest(args.Pod)
 		for _, name := range *args.NodeNames {
