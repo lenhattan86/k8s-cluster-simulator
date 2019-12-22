@@ -27,7 +27,7 @@ import (
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/util"
 )
 
-const LOAD_PHASE_CACHE = 50
+const LOAD_PHASE_CACHE = 5
 
 // Pod represents a simulated pod.
 type Pod struct {
@@ -98,32 +98,6 @@ func (status Status) MarshalJSON() ([]byte, error) {
 
 // NewPod creates a pod with the given v1.Pod, the clock at which the pod was bound to a node, and
 // the pod's status.
-// Returns error if fails to parse the simulation spec of the pod.
-// func NewPod(pod *v1.Pod, boundAt clock.Clock, status Status, node string) (*Pod, error) {
-// 	spec, numPhase, err := parseSpec(pod)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	path := parsePath(pod)
-// 	currentPhase := 0
-// 	loadPhase := 2
-// 	if path != "" {
-// 		spec = spec[:loadPhase]
-// 	}
-
-// 	return &Pod{
-// 		v1:           pod,
-// 		spec:         spec,
-// 		boundAt:      boundAt,
-// 		status:       status,
-// 		node:         node,
-// 		path:         path,
-// 		numPhase:     numPhase,
-// 		loadPhase:    loadPhase,
-// 		currentPhase: currentPhase,
-// 	}, nil
-// }
 func NewPod(pod *v1.Pod, boundAt clock.Clock, status Status, node string, currentPhase, loadPhase int, currentSpec spec) (*Pod, error) {
 	spec, numPhase, err := parseSpec(pod)
 	if err != nil {
@@ -133,8 +107,9 @@ func NewPod(pod *v1.Pod, boundAt clock.Clock, status Status, node string, curren
 	path := parsePath(pod)
 	newLoadPhase := loadPhase + LOAD_PHASE_CACHE
 	if path != "" {
-		if newLoadPhase > numPhase {
+		if newLoadPhase >= numPhase {
 			newLoadPhase = numPhase
+			path = ""
 		}
 		if currentSpec == nil {
 			spec = spec[:newLoadPhase]

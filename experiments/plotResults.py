@@ -17,6 +17,7 @@ from data_utils import *
 tick = 1
 ## plot utilization: number of busy nodes.
 cap = 64
+utilization_range=[0, 1]
 
 cpuStr = 'cpu'
 memStr = 'memory'
@@ -28,6 +29,7 @@ plotTotalDemand = True
 plotOverbook = True
 plotQoS=True
 plotPredictionPenalty=True
+plotUtilization=True
 loads = [plotTotalDemand, True, False, plotOverload, plotOverbook, plotObj, plotTotalRequest, plotQoS, plotPredictionPenalty]
 
 path = "./log"
@@ -226,6 +228,24 @@ if plotObj:
 
     fig.savefig(FIG_PATH+"/max_cpu_usage.pdf", bbox_inches='tight')
 
+if plotUtilization:
+    # requests
+    data = []
+    for i in range(methodsNum):
+        cpu = cpuRequests[i]
+        if (len(cpu) > utilization_range[1]):
+            utilization_range[1] = len(cpu)
+        if (len(cpu) > utilization_range[0]):
+            utilization_range[0] = len(cpu)
+        data.append([1,1])
+    
+    
+
+    # demand
+
+
+    # usage
+
 if plotTotalRequest:
     # Y_MAX = np.amax(cpuRequests)
     fig = plt.figure(figsize=FIG_ONE_COL)
@@ -307,7 +327,7 @@ if plotOverbook:
 
     fig.savefig(FIG_PATH+"/overbook.pdf", bbox_inches='tight')
 
-## plot performance: number of overload nodes.
+## plot QoS
 if plotQoS:
 
     fig = plt.figure(figsize=FIG_ONE_COL)
