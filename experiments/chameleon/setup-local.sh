@@ -41,9 +41,7 @@ sudo apt-get install -y python-pip python3-pip
 sudo pip install tensorflow; \
 sudo pip3 install tensorflow
 
-#
 # sudo apt install golang-go
-
 ## download code
 cd ~/ ; \
 mkdir ~/go; mkdir ~/go/src; mkdir ~/go/src/github.com ; \

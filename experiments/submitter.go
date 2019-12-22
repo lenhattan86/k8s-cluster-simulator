@@ -201,6 +201,9 @@ func (s *mySubmitter) loadPod(filePath string) (*v1.Pod, error) {
 		return nil, fmt.Errorf("cannot parse pod from file %s", filePath)
 	}
 
+	// store filePath for loading more resource usages
+	pod.Annotations["path"] = filePath
+
 	return &pod, nil
 }
 

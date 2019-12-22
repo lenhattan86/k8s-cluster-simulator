@@ -16,9 +16,9 @@ mv $path/tasks-res $path/tasks
 # https://drive.google.com/file/d/1tvEBcB9gJMtMV5T2jwRxm2cO9Um59Dxd/view?usp=sharing
 wget --load-cookies /tmp/cookies.txt \
   "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=1tvEBcB9gJMtMV5T2jwRxm2cO9Um59Dxd' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=1tvEBcB9gJMtMV5T2jwRxm2cO9Um59Dxd" \
-  -O $tarPath/tasks-res-mani.tar && rm -rf /tmp/cookies.txt
-sudo tar -xvf $tarPath/tasks-res-mani.tar -C $path 
-rm -rf $tarPath/tasks-res-mani.tar
+  -O $tarPath/tasks-res-mani.tar && rm -rf /tmp/cookies.txt; \
+sudo tar -xvf $tarPath/tasks-res-mani.tar -C $path; \
+rm -rf $tarPath/tasks-res-mani.tar; \
 mv $path/tasks-res $path/tasks
 
 wget --load-cookies /tmp/cookies.txt \

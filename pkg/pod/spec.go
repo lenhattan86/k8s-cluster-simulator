@@ -34,13 +34,22 @@ type specPhase struct {
 
 // parseSpec parses the pod's "simSpec" annotation into spec.
 // Returns error if the "simSpec" annotation does not exist, or the failed to parse.
-func parseSpec(pod *v1.Pod) (spec, error) {
+func parseSpec(pod *v1.Pod) (spec, int, error) {
 	specAnnot, ok := pod.ObjectMeta.Annotations["simSpec"]
 	if !ok {
-		return nil, strongerrors.InvalidArgument(errors.Errorf("simSpec annotation not defined"))
+		return nil, 0, strongerrors.InvalidArgument(errors.Errorf("simSpec annotation not defined"))
+	}
+	s, err := parseSpecYAML(specAnnot)
+	return s, len(s), err
+}
+
+func parsePath(pod *v1.Pod) string {
+	path, ok := pod.ObjectMeta.Annotations["path"]
+	if !ok {
+		return ""
 	}
 
-	return parseSpecYAML(specAnnot)
+	return path
 }
 
 // parseSpecYAML parses the YAML into spec.

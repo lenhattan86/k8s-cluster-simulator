@@ -94,7 +94,7 @@ then
     echo "simulation took $SECONDS seconds"
 else
     SECONDS=0
-    runSim $GENERIC true false
+    # runSim $GENERIC true false
     echo "Generating workload took $SECONDS seconds"
 
     SECONDS=0 
@@ -105,7 +105,7 @@ else
     wait
     echo "simulation took $SECONDS seconds"
 fi
-
+# sudo echo -200 > /proc/$pid/oom_score_adj
 
 SECONDS=0 
 echo "==================Plotting=================="

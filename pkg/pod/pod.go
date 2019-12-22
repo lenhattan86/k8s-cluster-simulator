@@ -16,6 +16,8 @@ package pod
 
 import (
 	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"time"
 
 	"github.com/containerd/containerd/log"
@@ -25,6 +27,8 @@ import (
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/util"
 )
 
+const LOAD_PHASE_CACHE = 2
+
 // Pod represents a simulated pod.
 type Pod struct {
 	v1             *v1.Pod
@@ -33,6 +37,10 @@ type Pod struct {
 	status         Status
 	node           string
 	CurrentMetrics *Metrics
+	path           string // for loading more resource usages.
+	currentPhase   int
+	numPhase       int
+	loadPhase      int
 }
 
 // Metrics is a metrics of a pod at one time point.
@@ -91,19 +99,62 @@ func (status Status) MarshalJSON() ([]byte, error) {
 // NewPod creates a pod with the given v1.Pod, the clock at which the pod was bound to a node, and
 // the pod's status.
 // Returns error if fails to parse the simulation spec of the pod.
-func NewPod(pod *v1.Pod, boundAt clock.Clock, status Status, node string) (*Pod, error) {
-	spec, err := parseSpec(pod)
+// func NewPod(pod *v1.Pod, boundAt clock.Clock, status Status, node string) (*Pod, error) {
+// 	spec, numPhase, err := parseSpec(pod)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	path := parsePath(pod)
+// 	currentPhase := 0
+// 	loadPhase := 2
+// 	if path != "" {
+// 		spec = spec[:loadPhase]
+// 	}
+
+// 	return &Pod{
+// 		v1:           pod,
+// 		spec:         spec,
+// 		boundAt:      boundAt,
+// 		status:       status,
+// 		node:         node,
+// 		path:         path,
+// 		numPhase:     numPhase,
+// 		loadPhase:    loadPhase,
+// 		currentPhase: currentPhase,
+// 	}, nil
+// }
+func NewPod(pod *v1.Pod, boundAt clock.Clock, status Status, node string, currentPhase, loadPhase int, currentSpec spec) (*Pod, error) {
+	spec, numPhase, err := parseSpec(pod)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Pod{
-		v1:      pod,
-		spec:    spec,
-		boundAt: boundAt,
-		status:  status,
-		node:    node,
-	}, nil
+	path := parsePath(pod)
+	newLoadPhase := loadPhase + LOAD_PHASE_CACHE
+	if path != "" {
+		if loadPhase > numPhase {
+			loadPhase = numPhase
+		}
+		if currentSpec == nil {
+			spec = spec[:newLoadPhase]
+		} else {
+			spec = append(currentSpec, spec[loadPhase:newLoadPhase]...)
+		}
+	}
+	newPod := Pod{
+		v1:           pod,
+		spec:         spec,
+		boundAt:      boundAt,
+		status:       status,
+		node:         node,
+		path:         path,
+		numPhase:     numPhase,
+		loadPhase:    newLoadPhase,
+		currentPhase: currentPhase,
+	}
+
+	return &newPod, nil
 }
 
 // ToV1 returns v1.Pod representation of this Pod.
@@ -160,19 +211,58 @@ func (pod *Pod) ResourceUsage(clock clock.Clock) v1.ResourceList {
 		if executedSeconds < phaseDurationAcc {
 			stop = i
 			break
-
 		}
 	}
-	//tanle delete past phases
+	//delete past phases & load new phases
 	if stop >= 0 {
 		phase := pod.spec[stop]
-		pod.spec[stop].seconds = phaseDurationAcc
-		pod.spec = pod.spec[stop:]
+		if stop > 0 {
+			pod.spec[stop].seconds = phaseDurationAcc
+			pod.spec = pod.spec[stop:]
+			pod.currentPhase++
+		}
+		//loading more phases
+		if pod.currentPhase >= pod.loadPhase-1 && pod.loadPhase < pod.numPhase {
+			loadPod, _ := pod.loadPod()
+			pod.spec = loadPod.spec
+			pod.currentPhase = loadPod.currentPhase
+			pod.loadPhase = loadPod.loadPhase
+		}
+
 		return phase.resourceUsage
 	}
 
 	log.L.Panic("Unreachable code in pod.ResourceUsage()")
 	return v1.ResourceList{}
+}
+
+func (pod *Pod) loadPod() (*Pod, error) {
+	if pod.path == "" {
+		return pod, nil
+	}
+
+	d, err := ioutil.ReadFile(pod.path)
+	if err != nil {
+		log.L.Errorf("cannot find file %s", pod.path)
+		return nil, fmt.Errorf("cannot find file %s", pod.path)
+	}
+	v1Pod := v1.Pod{}
+	err = json.Unmarshal(d, &v1Pod)
+	if err != nil {
+		log.L.Errorf("cannot parse pod from file %s", pod.path)
+		return nil, fmt.Errorf("cannot parse pod from file %s", pod.path)
+	}
+	// store filePath for loading more resource usages
+	v1Pod.Annotations["path"] = pod.path
+
+	newPod, err := NewPod(&v1Pod, pod.boundAt, pod.status, pod.node, pod.currentPhase, pod.loadPhase, pod.spec)
+
+	if err != nil {
+		log.L.Errorf("cannot load pod %v", pod.v1.Name)
+		return nil, fmt.Errorf("cannot load pod %v", pod.v1.Name)
+	}
+
+	return newPod, nil
 }
 
 // IsRunning returns whether this Pod is running at the given clock.
