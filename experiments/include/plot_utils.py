@@ -26,10 +26,9 @@ def plot_group_bar(fig_size, width, xticklabels, ylabel, legends, data, title):
     ax.set_xticklabels(xticklabels)
     ax.legend()
 
-    n = len(legends)
-    
+    n = len(legends)    
     for i in range(n): 
-        rects = ax.bar(x - width/n*i, data[i], width, label=legends[i])
+        rects = ax.bar(x - n/2*width + width/2 + i*width, data[i], width, label=legends[i])
         autolabel(rects, ax)
 
     # fig.tight_layout()
