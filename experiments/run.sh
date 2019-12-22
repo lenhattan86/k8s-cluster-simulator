@@ -32,7 +32,7 @@ then
     totalPodNumber=25000000
     start="2019-01-01T00:00:00+09:00"
     end="2019-01-02T06:00:00+09:00"
-    pathToTrace="/home/cc/google-data/tasks/tasks-res"
+    pathToTrace="/home/cc/google-data/tasks"
     pathToWorkload="/home/cc/google-data/workload"
     log_path="/home/cc/google-data/log"
     tick=60
