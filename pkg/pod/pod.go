@@ -27,7 +27,7 @@ import (
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/util"
 )
 
-const LOAD_PHASE_CACHE = 2
+const LOAD_PHASE_CACHE = 50
 
 // Pod represents a simulated pod.
 type Pod struct {
@@ -222,11 +222,13 @@ func (pod *Pod) ResourceUsage(clock clock.Clock) v1.ResourceList {
 			pod.currentPhase++
 		}
 		//loading more phases
-		if pod.currentPhase >= pod.loadPhase-1 && pod.loadPhase < pod.numPhase {
-			loadPod, _ := pod.loadPod()
-			pod.spec = loadPod.spec
-			pod.currentPhase = loadPod.currentPhase
-			pod.loadPhase = loadPod.loadPhase
+		if pod.path != "" {
+			if pod.currentPhase >= pod.loadPhase-1 && pod.loadPhase < pod.numPhase {
+				loadPod, _ := pod.loadPod()
+				pod.spec = loadPod.spec
+				pod.currentPhase = loadPod.currentPhase
+				pod.loadPhase = loadPod.loadPhase
+			}
 		}
 
 		return phase.resourceUsage
