@@ -203,7 +203,7 @@ for m in methods:
     cpuAllocatables.append(a_cpu)
     memAllocatables.append(a_mem)
     cpuRequests.append(ur_cpu)
-    memRequests.append()
+    memRequests.append(ur_mem)
     QoSs.append(q)
     PredPenalties.append(p)
 
@@ -255,6 +255,13 @@ if plotUtilization:
     width = GBAR_WIDTH/2
     rects1 = ax.bar(x - width/2, cpuUtil,  width, label="cpu")
     rects2 = ax.bar(x + width/2, memUtil,  width, label='memory')
+
+    labels = methods
+    ax.set_ylabel('Resource Request')
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels)
+    ax.legend()
+
     
     fig.savefig(FIG_PATH+"/request-avg.pdf", bbox_inches='tight')
 
