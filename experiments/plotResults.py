@@ -10,6 +10,7 @@ import re
 import matplotlib.pyplot as plt
 
 sys.path.insert(0, './include')
+from plot_utils import *
 from common import *
 from utils import *
 from data_utils import *
@@ -161,7 +162,7 @@ def loadLog(filepath) :
 
     fp.close()
 
-    return busyNodes, overloadNodes, overBookNodes, cpuUsages, memUsages, cpuRequests, maxCpuUsages, cpuAllocatables, memAllocatables, QoS, PredPenalty
+    return busyNodes, overloadNodes, overBookNodes, cpuUsages, memUsages, cpuRequests, memRequests, maxCpuUsages, cpuAllocatables, memAllocatables, QoS, PredPenalty
 
 def formatQuatity(str):
     strArray = re.split('(\d+)', str)
@@ -187,11 +188,12 @@ maxCpuUsages = []
 cpuAllocatables = []
 memAllocatables = []
 cpuRequests = []
+memRequests = []
 QoSs = []
 PredPenalties = []
 
 for m in methods:
-    b, ol, ob, u_cpu, u_mem, ur, mu, a_cpu,a_mem, q, p = loadLog(path+"/kubesim_"+m+".log")
+    b, ol, ob, u_cpu, u_mem, ur_cpu, ur_mem, mu, a_cpu,a_mem, q, p = loadLog(path+"/kubesim_"+m+".log")
     busyNodes.append(b)
     overloadNodes.append(ol)
     overbookNodes.append(ob)
@@ -200,7 +202,8 @@ for m in methods:
     maxCpuUsages.append(mu)
     cpuAllocatables.append(a_cpu)
     memAllocatables.append(a_mem)
-    cpuRequests.append(ur)
+    cpuRequests.append(ur_cpu)
+    memRequests.append()
     QoSs.append(q)
     PredPenalties.append(p)
 
@@ -230,19 +233,32 @@ if plotObj:
 
 if plotUtilization:
     # requests
-    data = []
+    fig, ax = plt.subplots(figsize=FIG_ONE_COL)
+
+    cpuUtil = []
+    cpuMin = []
+    cpuMax = []
+    memUtil = []
+    memMin = []
+    memMax = []
     for i in range(methodsNum):
         cpu = cpuRequests[i]
+        mem = memRequests[i]
         if (len(cpu) > utilization_range[1]):
             utilization_range[1] = len(cpu)
-        if (len(cpu) > utilization_range[0]):
+        if (len(cpu) < utilization_range[0]):
             utilization_range[0] = len(cpu)
-        data.append([1,1])
+        cpuUtil.append(np.average(cpu[utilization_range[0]:utilization_range[1]]))  
+        memUtil.append(np.average(mem[utilization_range[0]:utilization_range[1]]))
+
+    x = np.arange(methodsNum) 
+    width = GBAR_WIDTH/2
+    rects1 = ax.bar(x - width/2, cpuUtil,  width, label="cpu")
+    rects2 = ax.bar(x + width/2, memUtil,  width, label='memory')
     
-    
+    fig.savefig(FIG_PATH+"/request-avg.pdf", bbox_inches='tight')
 
     # demand
-
 
     # usage
 

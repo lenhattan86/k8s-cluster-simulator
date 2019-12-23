@@ -99,20 +99,20 @@ func filterFitResource(args api.ExtenderArgs) api.ExtenderFilterResult {
 			if _, ok := scheduler.NodeMetricsCache[name]; ok {
 				usage := scheduler.NodeMetricsCache[name].Usage
 				capacity := scheduler.NodeMetricsCache[name].Allocatable
-
 				if (capacity.MilliCPU-usage.MilliCPU-request.MilliCPU) < 0 || (capacity.Memory-usage.Memory-request.Memory) < 0 {
-					failedNodesMap[name] = "This node's usage is too high"
+					filtered[i] = ""
 				} else {
 					filtered[i] = name
 				}
 			} else {
 				filtered[i] = name
-
 			}
 		})
 		for _, name := range filtered {
 			if name != "" {
 				nodeNames = append(nodeNames, name)
+			} else {
+				failedNodesMap[name] = "This node's usage is too high"
 			}
 		}
 	} else {
