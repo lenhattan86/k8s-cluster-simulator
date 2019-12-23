@@ -18,7 +18,7 @@ from data_utils import *
 tick = 1
 ## plot utilization: number of busy nodes.
 cap = 64
-utilization_range=[0, 1]
+utilization_range=[10, 300]
 
 cpuStr = 'cpu'
 memStr = 'memory'
@@ -45,6 +45,8 @@ def loadLog(filepath) :
     maxCpuUsages = []
     cpuRequests = []
     memRequests = []
+    totalCpuAllocations = []
+    totalMemAllocations = []
     memUsages = []
     gpuUsages = []
     cpuAllocatables = []
@@ -67,6 +69,8 @@ def loadLog(filepath) :
             overBookNode = 0
             totalCpuUsage = 0
             totalMemUsage = 0
+            totalCpuAllocation = 0
+            totalMemAllocation = 0
             totalCpuCapacity = 0
             totalMemCapacity = 0
             maxCpuUsage = 0
@@ -120,6 +124,15 @@ def loadLog(filepath) :
                     elif(rsName==memStr):
                         memRequest = formatQuatity(requestDict[rsName])
                         totalMemRequest = totalMemRequest + memRequest
+                
+                allocationDict = node['TotalResourceAllocation']    
+                for rsName in allocationDict:
+                    if(rsName==cpuStr):
+                        cpuAllocation = formatQuatity(allocationDict[rsName])
+                        totalCpuAllocation = totalCpuAllocation + cpuAllocation
+                    elif(rsName==memStr):
+                        memAllocation = formatQuatity(allocationDict[rsName])
+                        totalMemAllocation = totalMemAllocation + memAllocation
 
                 if(cpuUsage > cpuAllocatable or memUsage > memAllocatable):
                     overloadNode = overloadNode+1
@@ -162,7 +175,7 @@ def loadLog(filepath) :
 
     fp.close()
 
-    return busyNodes, overloadNodes, overBookNodes, cpuUsages, memUsages, cpuRequests, memRequests, maxCpuUsages, cpuAllocatables, memAllocatables, QoS, PredPenalty
+    return busyNodes, overloadNodes, overBookNodes, cpuUsages, memUsages, cpuRequests, memRequests, totalCpuAllocations, totalMemAllocations, maxCpuUsages, cpuAllocatables, memAllocatables, QoS, PredPenalty
 
 def formatQuatity(str):
     strArray = re.split('(\d+)', str)
@@ -177,6 +190,7 @@ def formatQuatity(str):
     return val
 
 methods = ["proposed","worstfit","oversub"]
+colors = [COLOR_PROPOSED, COLOR_WORST_FIT, COLOR_OVER_SUB]
 # methods = ["oneshot","worstfit"]
 methodsNum = len(methods)
 busyNodes = []
@@ -187,21 +201,25 @@ memUsages = []
 maxCpuUsages = []
 cpuAllocatables = []
 memAllocatables = []
+cpuAllocations = []
+memAllocations = []
 cpuRequests = []
 memRequests = []
 QoSs = []
 PredPenalties = []
 
 for m in methods:
-    b, ol, ob, u_cpu, u_mem, ur_cpu, ur_mem, mu, a_cpu,a_mem, q, p = loadLog(path+"/kubesim_"+m+".log")
+    b, ol, ob, u_cpu, u_mem, ur_cpu, ur_mem, a_cpu, a_mem,   mu, c_cpu,c_mem, q, p = loadLog(path+"/kubesim_"+m+".log")
     busyNodes.append(b)
     overloadNodes.append(ol)
     overbookNodes.append(ob)
     cpuUsages.append(u_cpu)
     memUsages.append(u_mem)
     maxCpuUsages.append(mu)
-    cpuAllocatables.append(a_cpu)
-    memAllocatables.append(a_mem)
+    cpuAllocatables.append(c_cpu)
+    memAllocatables.append(c_mem)
+    cpuAllocations.append(a_cpu)
+    memAllocations.append(a_mem)
     cpuRequests.append(ur_cpu)
     memRequests.append(ur_mem)
     QoSs.append(q)
@@ -216,11 +234,11 @@ if plotObj:
     fig = plt.figure(figsize=FIG_ONE_COL)
     max_len = 0
     for i in range(methodsNum):
-        plt.plot(range(0,len(maxCpuUsages[i])*tick,tick), maxCpuUsages[i])
+        plt.plot(range(0,len(maxCpuUsages[i])*tick,tick), maxCpuUsages[i], color=colors[i])
         if max_len < len(maxCpuUsages[i]):
             max_len = len(maxCpuUsages[i])
     
-    plt.plot(range(0,max_len*tick,tick), [cap] * max_len)
+    plt.plot(range(0,max_len*tick,tick), [cap] * max_len, color=COLOR_CAP)
     legends = methods
     legends.append('capacity')
     plt.legend(legends, loc='best')
@@ -232,50 +250,100 @@ if plotObj:
     fig.savefig(FIG_PATH+"/max_cpu_usage.pdf", bbox_inches='tight')
 
 if plotUtilization:
-    # requests
-    fig, ax = plt.subplots(figsize=FIG_ONE_COL)
+    cpuReqUtil = []
+    memReqUtil = []
+    cpuDemandUtil = []
+    memDemandUtil = []
+    cpuUsageUtil = []
+    memUsageUtil = []
+    cpuCap = np.average(cpuAllocatables[0])
+    memCap = np.average(memAllocatables[0])
 
-    cpuUtil = []
-    cpuMin = []
-    cpuMax = []
-    memUtil = []
-    memMin = []
-    memMax = []
+    if memCap == 0:
+        memCap = 1.0
+    if cpuCap == 0:
+        cpuCap = 1.0
+
+    Y_MAX = 1.0
+    
+
     for i in range(methodsNum):
-        cpu = cpuRequests[i]
-        mem = memRequests[i]
-        if (len(cpu) > utilization_range[1]):
-            utilization_range[1] = len(cpu)
-        if (len(cpu) < utilization_range[0]):
-            utilization_range[0] = len(cpu)
-        cpuUtil.append(np.average(cpu[utilization_range[0]:utilization_range[1]]))  
-        memUtil.append(np.average(mem[utilization_range[0]:utilization_range[1]]))
+        cpuR = cpuRequests[i]
+        memR = memRequests[i]
+        cpuD = cpuUsages[i]
+        memD = memUsages[i]
+        cpuU = cpuAllocations[i]
+        memU = memAllocations[i]
+        if (len(cpuRequests[i]) > utilization_range[1]):
+            utilization_range[1] = len(cpuRequests[i])
+        if (len(cpuRequests[i]) < utilization_range[0]):
+            utilization_range[0] = len(cpuRequests[i])
+
+        cpuReqUtil.append(np.average(cpuR[utilization_range[0]:utilization_range[1]])/cpuCap)  
+        memReqUtil.append(np.average(memR[utilization_range[0]:utilization_range[1]])/memCap)
+
+        cpuDemandUtil.append(np.average(cpuD[utilization_range[0]:utilization_range[1]])/cpuCap)  
+        memDemandUtil.append(np.average(memD[utilization_range[0]:utilization_range[1]])/memCap)
+
+        cpuUsageUtil.append(np.average(cpuU[utilization_range[0]:utilization_range[1]])/cpuCap)  
+        memUsageUtil.append(np.average(memU[utilization_range[0]:utilization_range[1]])/memCap)
+
+    Y_MAX = np.maximum(np.amax(cpuReqUtil),Y_MAX)
+    Y_MAX = np.maximum(np.amax(memReqUtil),Y_MAX)
+    Y_MAX = np.maximum(np.amax(cpuDemandUtil),Y_MAX)
+    Y_MAX = np.maximum(np.amax(memDemandUtil),Y_MAX)
+    # Y_MAX = np.maximum(np.amax(cpuUsageUtil),Y_MAX)
+    # Y_MAX = np.maximum(np.amax(memUsageUtil),Y_MAX)
 
     x = np.arange(methodsNum) 
     width = GBAR_WIDTH/2
-    rects1 = ax.bar(x - width/2, cpuUtil,  width, label="cpu")
-    rects2 = ax.bar(x + width/2, memUtil,  width, label='memory')
-
+    ## plot
+    # request    
+    fig, ax = plt.subplots(figsize=FIG_ONE_COL)
+    rects1 = ax.bar(x - width/2, cpuReqUtil,  width, label=STR_CPU, color=COLOR_CPU)
+    rects2 = ax.bar(x + width/2, memReqUtil,  width, label=STR_MEM, color=COLOR_MEM)
     labels = methods
-    ax.set_ylabel('Resource Request')
+    ax.set_ylabel('Request')
     ax.set_xticks(x)
     ax.set_xticklabels(labels)
-    ax.legend()
+    ax.legend()    
+    plt.ylim(0,Y_MAX*1.1)
 
-    
     fig.savefig(FIG_PATH+"/request-avg.pdf", bbox_inches='tight')
 
     # demand
+    fig, ax = plt.subplots(figsize=FIG_ONE_COL)
+    rects1 = ax.bar(x - width/2, cpuDemandUtil,  width, label=STR_CPU, color=COLOR_CPU)
+    rects2 = ax.bar(x + width/2, memDemandUtil,  width, label=STR_MEM, color=COLOR_MEM)
+    labels = methods
+    ax.set_ylabel('Demand')
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels)
+    ax.legend()    
+    plt.ylim(0,Y_MAX*1.1)
+
+    fig.savefig(FIG_PATH+"/demand-avg.pdf", bbox_inches='tight')
 
     # usage
+    fig, ax = plt.subplots(figsize=FIG_ONE_COL)
+    rects1 = ax.bar(x - width/2, cpuUsageUtil,  width, label=STR_CPU)
+    rects2 = ax.bar(x + width/2, memUsageUtil,  width, label=STR_MEM)
+    labels = methods
+    ax.set_ylabel('Usage')
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels)
+    ax.legend()    
+    plt.ylim(0,Y_MAX*1.1)
+
+    fig.savefig(FIG_PATH+"/usage-avg.pdf", bbox_inches='tight')
 
 if plotTotalRequest:
     # Y_MAX = np.amax(cpuRequests)
     fig = plt.figure(figsize=FIG_ONE_COL)
     for i in range(methodsNum):
-        plt.plot(range(0,len(cpuRequests[i])*tick,tick), cpuRequests[i])
+        plt.plot(range(0,len(cpuRequests[i])*tick,tick), cpuRequests[i], color=colors[i])
 
-    plt.plot(range(0,len(cpuAllocatables[0])*tick,tick), cpuAllocatables[0])
+    plt.plot(range(0,len(cpuAllocatables[0])*tick,tick), cpuAllocatables[0], color=COLOR_CAP)
     legends = methods
     legends.append('capacity')
 
@@ -291,9 +359,9 @@ if plotTotalDemand:
     # Y_MAX = np.amax(cpuRequests)
     fig = plt.figure(figsize=FIG_ONE_COL)
     for i in range(methodsNum):
-        plt.plot(range(0,len(cpuUsages[i])*tick,tick), cpuUsages[i])
+        plt.plot(range(0,len(cpuUsages[i])*tick,tick), cpuUsages[i], color=colors[i])
     
-    plt.plot(range(0,len(cpuAllocatables[0])*tick,tick), cpuAllocatables[0])
+    plt.plot(range(0,len(cpuAllocatables[0])*tick,tick), cpuAllocatables[0], color=COLOR_CAP)
     legends = methods
     legends.append('capacity')
 
@@ -307,9 +375,9 @@ if plotTotalDemand:
 
     fig = plt.figure(figsize=FIG_ONE_COL)
     for i in range(methodsNum):
-        plt.plot(range(0,len(memUsages[i])*tick,tick), memUsages[i])
+        plt.plot(range(0,len(memUsages[i])*tick,tick), memUsages[i], color=colors[i])
     
-    plt.plot(range(0,len(memAllocatables[0])*tick,tick), memAllocatables[0])
+    plt.plot(range(0,len(memAllocatables[0])*tick,tick), memAllocatables[0], color=COLOR_CAP)
     legends = methods
     legends.append('capacity')
 
@@ -325,7 +393,7 @@ if plotTotalDemand:
 if plotOverload:
     fig = plt.figure(figsize=FIG_ONE_COL)
     for i in range(methodsNum):
-        plt.plot(range(0,len(overloadNodes[i])*tick,tick), overloadNodes[i])
+        plt.plot(range(0,len(overloadNodes[i])*tick,tick), overloadNodes[i], color=colors[i])
 
     plt.legend(methods, loc='best')
     plt.xlabel(STR_TIME_MIN)
@@ -339,7 +407,7 @@ if plotOverload:
 if plotOverbook:
     fig = plt.figure(figsize=FIG_ONE_COL)
     for i in range(methodsNum):
-        plt.plot(range(0,len(overbookNodes[i])*tick,tick), overbookNodes[i])
+        plt.plot(range(0,len(overbookNodes[i])*tick,tick), overbookNodes[i], color=colors[i])
     
     legends = methods   
     plt.legend(legends, loc='best')
@@ -355,7 +423,7 @@ if plotQoS:
 
     fig = plt.figure(figsize=FIG_ONE_COL)
     for i in range(methodsNum):
-        plt.plot(range(0,len(QoSs[i])*tick,tick), QoSs[i])
+        plt.plot(range(0,len(QoSs[i])*tick,tick), QoSs[i], color=colors[i])
     
     legends = methods   
     plt.legend(legends, loc='best')
