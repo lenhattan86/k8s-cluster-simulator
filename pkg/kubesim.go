@@ -17,6 +17,7 @@ package kubesim
 import (
 	"context"
 	"fmt"
+	"runtime"
 	"sort"
 	"time"
 
@@ -213,6 +214,8 @@ func (k *KubeSim) Run(ctx context.Context) error {
 			} else {
 				scheduler.TimingMap["metrics.BuildMetrics"] += lapse.Microseconds()
 			}
+
+			PrintMemUsage()
 
 			scheduler.GlobalMetrics = met
 			scheduler.NodeMetricsMap = scheduler.Estimate(k.nodeNames)
@@ -496,4 +499,15 @@ func (k *KubeSim) deletePodFromNode(podNamespace, podName string) {
 	if !deletedFromNode { // nolint
 		//
 	}
+}
+
+func PrintMemUsage() {
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	// For info on each, see: https://golang.org/pkg/runtime/#MemStats
+	log.L.Infof("Alloc = %v MiB \tTotalAlloc = %v MiB \tSys = %v MiB \tNumGC = %v", bToMb(m.Alloc), bToMb(m.TotalAlloc), bToMb(m.Sys), m.NumGC)
+}
+
+func bToMb(b uint64) uint64 {
+	return b / 1024 / 1024
 }

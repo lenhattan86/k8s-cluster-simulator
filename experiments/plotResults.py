@@ -24,10 +24,10 @@ cpuStr = 'cpu'
 memStr = 'memory'
 show=False
 plotObj = True
-plotOverload = True
+plotOverload = False
 plotTotalRequest = True
 plotTotalDemand = True
-plotOverbook = True
+plotOverbook = False
 plotQoS=True
 plotPredictionPenalty=True
 plotUtilization=True
@@ -351,9 +351,23 @@ if plotTotalRequest:
     plt.xlabel(STR_TIME_MIN)
     plt.ylabel(STR_CPU_CORES)
     # plt.ylim(0,Y_MAX)
-    plt.suptitle("Total Cpu Request")
+    fig.savefig(FIG_PATH+"/total-request-cpu.pdf", bbox_inches='tight')
+    
 
-    fig.savefig(FIG_PATH+"/total-request.pdf", bbox_inches='tight')
+    fig = plt.figure(figsize=FIG_ONE_COL)
+    for i in range(methodsNum):
+        plt.plot(range(0,len(memRequests[i])*tick,tick), memRequests[i], color=colors[i])
+
+    plt.plot(range(0,len(memAllocatables[0])*tick,tick), memAllocatables[0], color=COLOR_CAP)
+    legends = methods
+    legends.append('capacity')
+
+    plt.legend(legends, loc='best')
+    plt.xlabel(STR_TIME_MIN)
+    plt.ylabel(STR_MEM_GB)
+    # plt.ylim(0,Y_MAX)
+
+    fig.savefig(FIG_PATH+"/total-request-mem.pdf", bbox_inches='tight')
 
 if plotTotalDemand:
     # Y_MAX = np.amax(cpuRequests)
@@ -369,7 +383,6 @@ if plotTotalDemand:
     plt.xlabel(STR_TIME_MIN)
     plt.ylabel(STR_CPU_CORES)
     # plt.ylim(0,Y_MAX)
-    plt.suptitle("Total Cpu Demand")
 
     fig.savefig(FIG_PATH+"/total-demand-cpu.pdf", bbox_inches='tight')
 
@@ -385,7 +398,6 @@ if plotTotalDemand:
     plt.xlabel(STR_TIME_MIN)
     plt.ylabel(STR_MEM_GB)
     # plt.ylim(0,Y_MAX)
-    plt.suptitle("Total Memory Demand")
 
     fig.savefig(FIG_PATH+"/total-demand-mem.pdf", bbox_inches='tight')
 
@@ -413,7 +425,6 @@ if plotOverbook:
     plt.legend(legends, loc='best')
     plt.xlabel(STR_TIME_MIN)
     plt.ylabel(STR_NODES)
-    plt.suptitle("Overbook")
     # plt.ylim(0,Y_MAX)
 
     fig.savefig(FIG_PATH+"/overbook.pdf", bbox_inches='tight')
