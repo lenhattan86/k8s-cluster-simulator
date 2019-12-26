@@ -181,7 +181,7 @@ func allocate(clock clock.Clock, pods []*pod.Pod, capacity, demand, request *nod
 			if pUsage.MilliCPU != 0 {
 				c = float32(pAllocation.MilliCPU) / float32(pUsage.MilliCPU)
 			}
-			if pUsage.Memory == 0 {
+			if pUsage.Memory != 0 {
 				m = float32(pAllocation.Memory) / float32(pUsage.Memory)
 			}
 			qos += minFloat32(c, m)
