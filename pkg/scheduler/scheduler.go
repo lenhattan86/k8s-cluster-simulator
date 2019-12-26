@@ -103,7 +103,7 @@ func max(a, b float32) float32 {
 func Estimate(nodeNames []string) map[string]*NodeMetrics {
 	if GlobalMetrics[metrics.QueueMetricsKey].(queue.Metrics).PendingPodsNum > 0 {
 		prevQoS := GlobalMetrics[metrics.QueueMetricsKey].(queue.Metrics).QualityOfService
-		if prevQoS < TargetQoS+0.005 {
+		if prevQoS <= TargetQoS {
 			PredictionPenalty = 2.5
 		} else if prevQoS > TargetQoS {
 			PredictionPenalty = max(PredictionPenalty*PenaltyUpdate, 1.1)
