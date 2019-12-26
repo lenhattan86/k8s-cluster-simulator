@@ -68,13 +68,12 @@ func (node *Node) ToNodeInfo(clock clock.Clock) (*nodeinfo.NodeInfo, error) {
 // Metrics returns the Metrics of this Node at the given clock.
 func (node *Node) Metrics(clock clock.Clock) Metrics {
 	return Metrics{
-		Allocatable:             node.ToV1().Status.Allocatable,
-		RunningPodsNum:          node.runningPodsNum(clock),
-		TerminatingPodsNum:      node.terminatingPodsNum(clock),
-		FailedPodsNum:           node.bindingFailedPodsNum(),
-		TotalResourceRequest:    node.totalResourceRequest(clock),
-		TotalResourceUsage:      node.totalResourceUsage(clock),
-		TotalResourceAllocation: resourceAllocation,
+		Allocatable:          node.ToV1().Status.Allocatable,
+		RunningPodsNum:       node.runningPodsNum(clock),
+		TerminatingPodsNum:   node.terminatingPodsNum(clock),
+		FailedPodsNum:        node.bindingFailedPodsNum(),
+		TotalResourceRequest: node.totalResourceRequest(clock),
+		TotalResourceUsage:   node.totalResourceUsage(clock),
 	}
 }
 
@@ -237,8 +236,6 @@ func (node *Node) totalResourceUsage(clock clock.Clock) v1.ResourceList {
 			total = util.ResourceListSum(total, pod.ResourceUsage(clock))
 		}
 	}
-
-	resourceAllocation = util.ResourceListMin(total, node.ToV1().Status.Allocatable)
 	return total
 }
 

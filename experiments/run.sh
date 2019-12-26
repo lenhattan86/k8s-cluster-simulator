@@ -10,7 +10,7 @@ ONE_SHOT="oneshot"
 WORST_FIT="worstfit"
 GENERIC="generic"
 
-oversub=2.2
+oversub=2.1
 cpuPerNode=64
 memPerNode=128
 

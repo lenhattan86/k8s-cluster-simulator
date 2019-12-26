@@ -23,6 +23,7 @@ import (
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/pod"
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/queue"
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/util"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/kubernetes/pkg/scheduler/nodeinfo"
 )
@@ -225,9 +226,7 @@ func BuildMetrics(clock clock.Clock, nodes map[string]*node.Node, queue queue.Po
 			name := nodeNames[i]
 			node := nodes[name]
 			nodeMetrics := node.Metrics(clock)
-			nodesMetricsMutex.Lock()
-			nodesMetrics[name] = nodeMetrics
-			nodesMetricsMutex.Unlock()
+			resourceAllocation := v1.ResourceList{}
 			if !isTinyMetrics {
 				capacity := nodeinfo.NewResource(nodeMetrics.Allocatable)
 				demand := nodeinfo.NewResource(nodeMetrics.TotalResourceUsage)
@@ -245,6 +244,11 @@ func BuildMetrics(clock clock.Clock, nodes map[string]*node.Node, queue queue.Po
 					}
 				}
 				qos, podNum := allocate(clock, node.PodList(), capacity, demand, request)
+				for _, pod := range node.PodList() {
+					if !pod.IsTerminated(clock) {
+						resourceAllocation = util.ResourceListSum(resourceAllocation, pod.CurrentMetrics.ResourceAllocation)
+					}
+				}
 				qosMutex.Lock()
 				podQoses += qos
 				qosMutex.Unlock()
@@ -252,6 +256,10 @@ func BuildMetrics(clock clock.Clock, nodes map[string]*node.Node, queue queue.Po
 				numPods += podNum
 				podNumMutex.Unlock()
 			}
+			nodeMetrics.TotalResourceAllocation = resourceAllocation
+			nodesMetricsMutex.Lock()
+			nodesMetrics[name] = nodeMetrics
+			nodesMetricsMutex.Unlock()
 		})
 	} else {
 		for name, node := range nodes {

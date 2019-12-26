@@ -187,7 +187,7 @@ def formatQuatity(str):
 
     return val
 
-methods = ["proposed","worstfit","oversub"]
+methods = ["worstfit","oversub", "proposed"]
 colors = [COLOR_PROPOSED, COLOR_WORST_FIT, COLOR_OVER_SUB]
 # methods = ["oneshot","worstfit"]
 methodsNum = len(methods)
