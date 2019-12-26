@@ -280,14 +280,14 @@ if plotUtilization:
         cpuU = cpuAllocations[i]
         memU = memAllocations[i]
 
-        cpuReqUtil.append(np.average(cpuR[data_range[0]:data_range[1]])/cpuCap)  
-        memReqUtil.append(np.average(memR[data_range[0]:data_range[1]])/memCap)
+        cpuReqUtil.append(round(np.average(cpuR[data_range[0]:data_range[1]])/cpuCap, 2))  
+        memReqUtil.append(round(np.average(memR[data_range[0]:data_range[1]])/memCap, 2))
 
-        cpuDemandUtil.append(np.average(cpuD[data_range[0]:data_range[1]])/cpuCap)  
-        memDemandUtil.append(np.average(memD[data_range[0]:data_range[1]])/memCap)
+        cpuDemandUtil.append(round(np.average(cpuD[data_range[0]:data_range[1]])/cpuCap, 2))  
+        memDemandUtil.append(round(np.average(memD[data_range[0]:data_range[1]])/memCap, 2))
 
-        cpuUsageUtil.append(np.average(cpuU[data_range[0]:data_range[1]])/cpuCap)  
-        memUsageUtil.append(np.average(memU[data_range[0]:data_range[1]])/memCap)
+        cpuUsageUtil.append(round(np.average(cpuU[data_range[0]:data_range[1]])/cpuCap,2))  
+        memUsageUtil.append(round(np.average(memU[data_range[0]:data_range[1]])/memCap,2))
 
     Y_MAX = np.maximum(np.amax(cpuReqUtil),Y_MAX)
     Y_MAX = np.maximum(np.amax(memReqUtil),Y_MAX)
@@ -301,8 +301,10 @@ if plotUtilization:
     ## plot
     # request    
     fig, ax = plt.subplots(figsize=FIG_ONE_COL)
-    rects1 = ax.bar(x - width, cpuReqUtil,  width, label=STR_CPU, color=COLOR_CPU)
-    rects2 = ax.bar(x, memReqUtil,  width, label=STR_MEM, color=COLOR_MEM)
+    rects = ax.bar(x - width, cpuReqUtil,  width, label=STR_CPU, color=COLOR_CPU)
+    autolabel(rects, ax)
+    rects = ax.bar(x, memReqUtil,  width, label=STR_MEM, color=COLOR_MEM)
+    autolabel(rects, ax)
     labels = methods
     ax.set_ylabel('Request')
     ax.set_xticks(x)
@@ -314,8 +316,10 @@ if plotUtilization:
 
     # demand
     fig, ax = plt.subplots(figsize=FIG_ONE_COL)
-    rects1 = ax.bar(x - width, cpuDemandUtil,  width, label=STR_CPU, color=COLOR_CPU)
-    rects2 = ax.bar(x, memDemandUtil,  width, label=STR_MEM, color=COLOR_MEM)
+    rects = ax.bar(x - width, cpuDemandUtil,  width, label=STR_CPU, color=COLOR_CPU)
+    autolabel(rects, ax)
+    rects = ax.bar(x, memDemandUtil,  width, label=STR_MEM, color=COLOR_MEM)
+    autolabel(rects, ax)
     labels = methods
     ax.set_ylabel('Demand')
     ax.set_xticks(x)
@@ -327,8 +331,10 @@ if plotUtilization:
 
     # usage
     fig, ax = plt.subplots(figsize=FIG_ONE_COL)
-    rects1 = ax.bar(x - width, cpuUsageUtil,  width, label=STR_CPU, color=COLOR_CPU)
-    rects2 = ax.bar(x, memUsageUtil,  width, label=STR_MEM, color=COLOR_MEM)
+    rects = ax.bar(x - width, cpuUsageUtil,  width, label=STR_CPU, color=COLOR_CPU)
+    autolabel(rects, ax)
+    rects = ax.bar(x, memUsageUtil,  width, label=STR_MEM, color=COLOR_MEM)
+    autolabel(rects, ax)
     labels = methods
     ax.set_ylabel('Usage')
     ax.set_xticks(x)
@@ -499,10 +505,11 @@ if plotQoS:
         qos = QoSs[i][data_range[0]:data_range[1]]        
         violation = 0
         for j in range (len(qos)):
-            if qos[j] < target_qos :
+            if round(qos[j],2) < target_qos :
                 violation = violation + 1
 
-        rects = ax.bar(i - BAR_WIDTH/2, violation*100/len(qos),  BAR_WIDTH, color=colors[i])
+        rects = ax.bar(i - BAR_WIDTH/2, round(violation*100/len(qos),1),  BAR_WIDTH, color=colors[i])
+        autolabel(rects, ax)
 
     labels = methods
     ax.set_ylabel(STR_QoS_Violation)
