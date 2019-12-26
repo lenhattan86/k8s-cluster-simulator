@@ -176,15 +176,16 @@ func allocate(clock clock.Clock, pods []*pod.Pod, capacity, demand, request *nod
 			qos += 1
 		} else if pRequest.MilliCPU < pUsage.MilliCPU || pRequest.Memory < pUsage.Memory {
 			// best effort
-			tmp := minFloat32(float32(pAllocation.MilliCPU)/float32(pUsage.MilliCPU), float32(pAllocation.Memory)/float32(pUsage.Memory))
-			if pUsage.Memory == 0 {
-				tmp = float32(pAllocation.MilliCPU) / float32(pUsage.MilliCPU)
-			} else if pUsage.MilliCPU == 0 {
-				tmp = float32(pAllocation.Memory) / float32(pUsage.Memory)
+			c := float32(1)
+			m := float32(1)
+			if pUsage.MilliCPU != 0 {
+				c = float32(pAllocation.MilliCPU) / float32(pUsage.MilliCPU)
 			}
-			qos += tmp
+			if pUsage.Memory == 0 {
+				m = float32(pAllocation.Memory) / float32(pUsage.Memory)
+			}
+			qos += minFloat32(c, m)
 		}
-
 	}
 
 	return qos, numRunningPods
