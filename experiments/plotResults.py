@@ -367,7 +367,6 @@ if plotUtilization:
 
     fig.savefig(FIG_PATH+"/total-request-mem.pdf", bbox_inches='tight')
 
-if plotUtilization:
     # Y_MAX = np.amax(cpuRequests)
     fig = plt.figure(figsize=FIG_ONE_COL)
     for i in range(methodsNum):
@@ -399,7 +398,6 @@ if plotUtilization:
 
     fig.savefig(FIG_PATH+"/total-demand-mem.pdf", bbox_inches='tight')
 
-if plotUtilization:
     # Y_MAX = np.amax(cpuRequests)
     fig = plt.figure(figsize=FIG_ONE_COL)
     for i in range(methodsNum):
@@ -491,6 +489,24 @@ if plotQoS:
     plt.xlim(0,1.02)
 
     fig.savefig(FIG_PATH+"/qos_cdf.pdf", bbox_inches='tight')
+
+    ## plot figures   
+    fig, ax = plt.subplots(figsize=FIG_ONE_COL)
+    for i in range(methodsNum):
+        qos = QoSs[i][data_range[0]:data_range[1]]        
+        violation = 0
+        for j in range (len(qos)):
+            if qos[j] < target_qos :
+                violation = violation + 1
+
+        rects = ax.bar(i, violation*100/len(qos),  BAR_WIDTH, color=colors[i])
+
+    labels = methods
+    ax.set_ylabel(STR_QoS_Violation)
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels)
+
+    fig.savefig(FIG_PATH+"/qos_violation.pdf", bbox_inches='tight')
 
 if plotPredictionPenalty:
     fig = plt.figure(figsize=FIG_ONE_COL)

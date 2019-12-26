@@ -9,6 +9,7 @@ FIG_HALF_COL = (2,1.5)
 FIG_2_3rd_COL = (2.67,2)
 ## bar
 GBAR_WIDTH = 0.3
+BAR_WIDTH = 0.2
 
 ## strings
 STR_CDF = "CDF"
@@ -31,8 +32,10 @@ STR_CPU_CORES = "CPU cores"
 STR_MEM_GB = "Mem. (GB)"
 STR_NODES = "nodes"
 STR_QoS = "QoS"
-STR_Pred_Penalty = "Prediction Penalty"
+STR_Pred_Penalty = "Prediction penalty"
 STR_CDF = "cdf"
+
+STR_QoS_Violation = "Qos violation (%)"
 
 ## colors
 # https://matplotlib.org/3.1.1/tutorials/colors/colors.html

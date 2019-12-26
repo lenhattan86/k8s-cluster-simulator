@@ -16,7 +16,6 @@ package metrics
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/clock"
@@ -295,7 +294,6 @@ func BuildMetrics(clock clock.Clock, nodes map[string]*node.Node, queue queue.Po
 
 	metrics[NodesMetricsKey] = nodesMetrics
 	metrics[PodsMetricsKey] = make(map[string]pod.Metrics) //podsMetrics
-	fmt.Printf("QualityOfService: %v podQoses %v numPods %v \n", QualityOfService, podQoses, numPods)
 	metrics[QueueMetricsKey] = queue.Metrics(QualityOfService, predictionPenalty)
 
 	return metrics, nil
