@@ -18,7 +18,8 @@ from data_utils import *
 tick = 1
 ## plot utilization: number of busy nodes.
 cap = 64
-utilization_range=[10, 300]
+data_range=[10, 300]
+target_qos = 0.99
 
 cpuStr = 'cpu'
 memStr = 'memory'
@@ -222,6 +223,12 @@ for m in methods:
     QoSs.append(q)
     PredPenalties.append(p)
 
+for i in range(methodsNum):
+    if (len(cpuRequests[i]) > data_range[1]):
+        data_range[1] = len(cpuRequests[i])
+    if (len(cpuRequests[i]) < data_range[0]):
+        data_range[0] = len(cpuRequests[i])
+
 ############# PLOTTING ##############
 if not os.path.exists(FIG_PATH):
     os.makedirs(FIG_PATH)
@@ -262,13 +269,6 @@ if plotUtilization:
         cpuCap = 1.0
 
     Y_MAX = 1.5
-    
-
-    for i in range(methodsNum):
-        if (len(cpuRequests[i]) > utilization_range[1]):
-            utilization_range[1] = len(cpuRequests[i])
-        if (len(cpuRequests[i]) < utilization_range[0]):
-            utilization_range[0] = len(cpuRequests[i])
 
     for i in range(methodsNum):
         cpuR = cpuRequests[i]
@@ -277,14 +277,14 @@ if plotUtilization:
         memD = memUsages[i]
         cpuU = cpuAllocations[i]
         memU = memAllocations[i]
-        cpuReqUtil.append(np.average(cpuR[utilization_range[0]:utilization_range[1]])/cpuCap)  
-        memReqUtil.append(np.average(memR[utilization_range[0]:utilization_range[1]])/memCap)
+        cpuReqUtil.append(np.average(cpuR[data_range[0]:data_range[1]])/cpuCap)  
+        memReqUtil.append(np.average(memR[data_range[0]:data_range[1]])/memCap)
 
-        cpuDemandUtil.append(np.average(cpuD[utilization_range[0]:utilization_range[1]])/cpuCap)  
-        memDemandUtil.append(np.average(memD[utilization_range[0]:utilization_range[1]])/memCap)
+        cpuDemandUtil.append(np.average(cpuD[data_range[0]:data_range[1]])/cpuCap)  
+        memDemandUtil.append(np.average(memD[data_range[0]:data_range[1]])/memCap)
 
-        cpuUsageUtil.append(np.average(cpuU[utilization_range[0]:utilization_range[1]])/cpuCap)  
-        memUsageUtil.append(np.average(memU[utilization_range[0]:utilization_range[1]])/memCap)
+        cpuUsageUtil.append(np.average(cpuU[data_range[0]:data_range[1]])/cpuCap)  
+        memUsageUtil.append(np.average(memU[data_range[0]:data_range[1]])/memCap)
 
     Y_MAX = np.maximum(np.amax(cpuReqUtil),Y_MAX)
     Y_MAX = np.maximum(np.amax(memReqUtil),Y_MAX)
@@ -324,8 +324,8 @@ if plotUtilization:
 
     # usage
     fig, ax = plt.subplots(figsize=FIG_ONE_COL)
-    rects1 = ax.bar(x - width/2, cpuUsageUtil,  width, label=STR_CPU)
-    rects2 = ax.bar(x + width/2, memUsageUtil,  width, label=STR_MEM)
+    rects1 = ax.bar(x - width/2, cpuUsageUtil,  width, label=STR_CPU, color=COLOR_CPU)
+    rects2 = ax.bar(x + width/2, memUsageUtil,  width, label=STR_MEM, color=COLOR_MEM)
     labels = methods
     ax.set_ylabel('Usage')
     ax.set_xticks(x)
@@ -399,6 +399,38 @@ if plotUtilization:
 
     fig.savefig(FIG_PATH+"/total-demand-mem.pdf", bbox_inches='tight')
 
+if plotUtilization:
+    # Y_MAX = np.amax(cpuRequests)
+    fig = plt.figure(figsize=FIG_ONE_COL)
+    for i in range(methodsNum):
+        plt.plot(range(0,len(cpuAllocations[i])*tick,tick), cpuAllocations[i], color=colors[i])
+    
+    plt.plot(range(0,len(cpuAllocatables[0])*tick,tick), cpuAllocatables[0], color=COLOR_CAP)
+    legends = methods
+    legends.append('capacity')
+
+    plt.legend(legends, loc='best')
+    plt.xlabel(STR_TIME_MIN)
+    plt.ylabel(STR_CPU_CORES)
+    # plt.ylim(0,Y_MAX)
+
+    fig.savefig(FIG_PATH+"/total-usage-cpu.pdf", bbox_inches='tight')
+
+    fig = plt.figure(figsize=FIG_ONE_COL)
+    for i in range(methodsNum):
+        plt.plot(range(0,len(memAllocations[i])*tick,tick), memAllocations[i], color=colors[i])
+    
+    plt.plot(range(0,len(memAllocatables[0])*tick,tick), memAllocatables[0], color=COLOR_CAP)
+    legends = methods
+    legends.append('capacity')
+
+    plt.legend(legends, loc='best')
+    plt.xlabel(STR_TIME_MIN)
+    plt.ylabel(STR_MEM_GB)
+    # plt.ylim(0,Y_MAX)
+
+    fig.savefig(FIG_PATH+"/total-usage-mem.pdf", bbox_inches='tight')
+
 ## plot performance: number of overload nodes.
 if plotOverload:
     fig = plt.figure(figsize=FIG_ONE_COL)
@@ -432,7 +464,8 @@ if plotQoS:
 
     fig = plt.figure(figsize=FIG_ONE_COL)
     for i in range(methodsNum):
-        plt.plot(range(0,len(QoSs[i])*tick,tick), QoSs[i], color=colors[i])
+        qos = QoSs[i][data_range[0]:data_range[1]]
+        plt.plot(range(0,len(qos)*tick,tick), qos, color=colors[i])
     
     legends = methods   
     plt.legend(legends, loc='best')
@@ -446,8 +479,9 @@ if plotQoS:
     ## plot figures   
     fig = plt.figure(figsize=FIG_ONE_COL)
     for i in range(methodsNum):
-        cdf = compute_cdf(numpy.array(QoSs[i]))
-        plt.plot(cdf.x, cdf.p)
+        qos = QoSs[i][data_range[0]:data_range[1]]
+        cdf = compute_cdf(numpy.array(qos))
+        plt.plot(cdf.x, cdf.p, color=colors[i])
 
     legends = methods   
     plt.legend(legends, loc='best')
