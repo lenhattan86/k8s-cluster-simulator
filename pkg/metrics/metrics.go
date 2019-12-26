@@ -116,14 +116,14 @@ func allocate(clock clock.Clock, pods []*pod.Pod, capacity, demand, request *nod
 		}
 
 		// fairShare = float32(c) / float32(d)
-		if d > 0 {
+		if d > 0 && c > 0 {
 			C := c
 			D := d
 			for _, pod := range runingPods {
 				pUsage := nodeinfo.NewResource(pod.CurrentMetrics.ResourceUsage)
 				pAllocation := nodeinfo.NewResource(pod.CurrentMetrics.ResourceAllocation)
 				extra := max(pUsage.MilliCPU-pAllocation.MilliCPU, 0)
-				pAllocation.MilliCPU += int64(C * extra / D)
+				pAllocation.MilliCPU += min(int64(C*extra/D), extra)
 				pod.CurrentMetrics.ResourceAllocation = pAllocation.ResourceList()
 			}
 		}
@@ -152,15 +152,14 @@ func allocate(clock clock.Clock, pods []*pod.Pod, capacity, demand, request *nod
 		}
 
 		// fairShare = float32(c) / float32(d)
-		if d > 0 {
+		if d > 0 && c > 0 {
 			C := c
 			D := d
 			for _, pod := range runingPods {
 				pUsage := nodeinfo.NewResource(pod.CurrentMetrics.ResourceUsage)
 				pAllocation := nodeinfo.NewResource(pod.CurrentMetrics.ResourceAllocation)
-
 				extra := max(pUsage.Memory-pAllocation.Memory, 0)
-				pAllocation.Memory += int64(C * extra / D)
+				pAllocation.Memory += min(int64(C*extra/D), extra)
 				pod.CurrentMetrics.ResourceAllocation = pAllocation.ResourceList()
 			}
 		}
@@ -170,21 +169,28 @@ func allocate(clock clock.Clock, pods []*pod.Pod, capacity, demand, request *nod
 		pUsage := nodeinfo.NewResource(pod.CurrentMetrics.ResourceUsage)
 		pAllocation := nodeinfo.NewResource(pod.CurrentMetrics.ResourceAllocation)
 		pRequest := nodeinfo.NewResource(pod.CurrentMetrics.ResourceRequest)
-		if (pUsage.MilliCPU <= pAllocation.MilliCPU) &&
-			(pUsage.Memory <= pAllocation.Memory) {
+
+		// if (pUsage.MilliCPU <= pAllocation.MilliCPU) &&
+		// 	(pUsage.Memory <= pAllocation.Memory) {
+		// 	// guaranteed
+		// 	qos += 1
+		// } else if pRequest.MilliCPU < pUsage.MilliCPU || pRequest.Memory < pUsage.Memory {
+		// 	// best effort
+		// 	c := float32(1)
+		// 	m := float32(1)
+		// 	if pUsage.MilliCPU != 0 {
+		// 		c = float32(pAllocation.MilliCPU) / float32(pUsage.MilliCPU)
+		// 	}
+		// 	if pUsage.Memory != 0 {
+		// 		m = float32(pAllocation.Memory) / float32(pUsage.Memory)
+		// 	}
+		// 	qos += minFloat32(c, m)
+		// }
+
+		if (pUsage.MilliCPU <= pAllocation.MilliCPU || pAllocation.MilliCPU >= pRequest.MilliCPU) &&
+			(pUsage.Memory <= pAllocation.Memory || pAllocation.Memory >= pRequest.Memory) {
 			// guaranteed
 			qos += 1
-		} else if pRequest.MilliCPU < pUsage.MilliCPU || pRequest.Memory < pUsage.Memory {
-			// best effort
-			c := float32(1)
-			m := float32(1)
-			if pUsage.MilliCPU != 0 {
-				c = float32(pAllocation.MilliCPU) / float32(pUsage.MilliCPU)
-			}
-			if pUsage.Memory != 0 {
-				m = float32(pAllocation.Memory) / float32(pUsage.Memory)
-			}
-			qos += minFloat32(c, m)
 		}
 	}
 
