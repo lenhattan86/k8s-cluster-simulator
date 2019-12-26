@@ -197,10 +197,10 @@ func (k *KubeSim) Run(ctx context.Context) error {
 			}
 
 			lapse := time.Since(start)
-			if _, ok := scheduler.TimingMap["k.schedule()"]; !ok {
-				scheduler.TimingMap["k.schedule()"] = lapse.Microseconds()
+			if _, ok := scheduler.TimingMap["k.schedule"]; !ok {
+				scheduler.TimingMap["k.schedule"] = lapse.Microseconds()
 			} else {
-				scheduler.TimingMap["k.schedule()"] += lapse.Microseconds()
+				scheduler.TimingMap["k.schedule"] += lapse.Microseconds()
 			}
 
 			// Rebuild metrics every tick for submitters to use.
@@ -217,11 +217,9 @@ func (k *KubeSim) Run(ctx context.Context) error {
 			}
 
 			// PrintMemUsage()
-
 			scheduler.GlobalMetrics = met
 			scheduler.NodeMetricsMap = scheduler.Estimate(k.nodeNames)
 			scheduler.NodeMetricsCache = scheduler.NodeMetricsMap
-
 			start = time.Now()
 			if k.clock.Sub(preMetricsClock) >= k.metricsTick {
 				preMetricsClock = k.clock
