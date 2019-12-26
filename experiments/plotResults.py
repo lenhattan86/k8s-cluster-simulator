@@ -298,8 +298,8 @@ if plotUtilization:
     ## plot
     # request    
     fig, ax = plt.subplots(figsize=FIG_ONE_COL)
-    rects1 = ax.bar(x - width/2, cpuReqUtil,  width, label=STR_CPU, color=COLOR_CPU)
-    rects2 = ax.bar(x + width/2, memReqUtil,  width, label=STR_MEM, color=COLOR_MEM)
+    rects1 = ax.bar(x - width, cpuReqUtil,  width, label=STR_CPU, color=COLOR_CPU)
+    rects2 = ax.bar(x + width, memReqUtil,  width, label=STR_MEM, color=COLOR_MEM)
     labels = methods
     ax.set_ylabel('Request')
     ax.set_xticks(x)
@@ -311,8 +311,8 @@ if plotUtilization:
 
     # demand
     fig, ax = plt.subplots(figsize=FIG_ONE_COL)
-    rects1 = ax.bar(x - width/2, cpuDemandUtil,  width, label=STR_CPU, color=COLOR_CPU)
-    rects2 = ax.bar(x + width/2, memDemandUtil,  width, label=STR_MEM, color=COLOR_MEM)
+    rects1 = ax.bar(x - width, cpuDemandUtil,  width, label=STR_CPU, color=COLOR_CPU)
+    rects2 = ax.bar(x + width, memDemandUtil,  width, label=STR_MEM, color=COLOR_MEM)
     labels = methods
     ax.set_ylabel('Demand')
     ax.set_xticks(x)
@@ -324,8 +324,8 @@ if plotUtilization:
 
     # usage
     fig, ax = plt.subplots(figsize=FIG_ONE_COL)
-    rects1 = ax.bar(x - width/2, cpuUsageUtil,  width, label=STR_CPU, color=COLOR_CPU)
-    rects2 = ax.bar(x + width/2, memUsageUtil,  width, label=STR_MEM, color=COLOR_MEM)
+    rects1 = ax.bar(x - width, cpuUsageUtil,  width, label=STR_CPU, color=COLOR_CPU)
+    rects2 = ax.bar(x + width, memUsageUtil,  width, label=STR_MEM, color=COLOR_MEM)
     labels = methods
     ax.set_ylabel('Usage')
     ax.set_xticks(x)
@@ -499,7 +499,7 @@ if plotQoS:
             if qos[j] < target_qos :
                 violation = violation + 1
 
-        rects = ax.bar(i, violation*100/len(qos),  BAR_WIDTH, color=colors[i])
+        rects = ax.bar(i - BAR_WIDTH/2, violation*100/len(qos),  BAR_WIDTH, color=colors[i])
 
     labels = methods
     ax.set_ylabel(STR_QoS_Violation)
