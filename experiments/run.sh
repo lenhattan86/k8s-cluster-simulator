@@ -99,9 +99,9 @@ else
 
     SECONDS=0 
     echo "running simulation"
-    runSim $PROPOSED false false &
-    runSim $WORST_FIT false false &
-    runSim $OVER_SUB false false &    
+    # runSim $PROPOSED false false &
+    # runSim $WORST_FIT false false &
+    runSim $OVER_SUB false false  &
     wait
     echo "simulation took $SECONDS seconds"
 fi

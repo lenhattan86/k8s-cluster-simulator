@@ -16,8 +16,8 @@ package metrics
 
 import (
 	"context"
+	"fmt"
 	"sync"
-	"sync/atomic"
 
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/clock"
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/node"
@@ -70,7 +70,14 @@ func min(a, b int64) int64 {
 	return b
 }
 
-func allocate(clock clock.Clock, pods []*pod.Pod, capacity, demand, request *nodeinfo.Resource) (int32, int32) {
+func minFloat32(a, b float32) float32 {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func allocate(clock clock.Clock, pods []*pod.Pod, capacity, demand, request *nodeinfo.Resource) (float32, int32) {
 
 	cpuFairSharePolicy := whichSharePolicy(demand.MilliCPU, request.MilliCPU, capacity.MilliCPU)
 	memFairSharePolicy := whichSharePolicy(demand.Memory, request.Memory, capacity.Memory)
@@ -85,7 +92,7 @@ func allocate(clock clock.Clock, pods []*pod.Pod, capacity, demand, request *nod
 	if numRunningPods == 0 {
 		return 0, 0
 	}
-	numSatifisedPods := int32(0)
+	qos := float32(0)
 	c := capacity.MilliCPU
 	d := demand.MilliCPU
 	r := request.MilliCPU
@@ -163,13 +170,24 @@ func allocate(clock clock.Clock, pods []*pod.Pod, capacity, demand, request *nod
 		pUsage := nodeinfo.NewResource(pod.CurrentMetrics.ResourceUsage)
 		pAllocation := nodeinfo.NewResource(pod.CurrentMetrics.ResourceAllocation)
 		pRequest := nodeinfo.NewResource(pod.CurrentMetrics.ResourceRequest)
-		if (pUsage.MilliCPU <= pAllocation.MilliCPU || pRequest.MilliCPU <= pAllocation.MilliCPU) &&
-			(pUsage.Memory <= pAllocation.Memory || pRequest.Memory <= pAllocation.Memory) {
-			numSatifisedPods++
+		if (pUsage.MilliCPU <= pAllocation.MilliCPU) &&
+			(pUsage.Memory <= pAllocation.Memory) {
+			// guaranteed
+			qos += 1
+		} else if pRequest.MilliCPU < pUsage.MilliCPU || pRequest.Memory < pUsage.Memory {
+			// best effort
+			tmp := minFloat32(float32(pAllocation.MilliCPU)/float32(pUsage.MilliCPU), float32(pAllocation.Memory)/float32(pUsage.Memory))
+			if pUsage.Memory == 0 {
+				tmp = float32(pAllocation.MilliCPU) / float32(pUsage.MilliCPU)
+			} else if pUsage.MilliCPU == 0 {
+				tmp = float32(pAllocation.Memory) / float32(pUsage.Memory)
+			}
+			qos += tmp
 		}
+
 	}
 
-	return numSatifisedPods, numRunningPods
+	return qos, numRunningPods
 }
 
 // BuildMetrics builds a Metrics at the given clock.
@@ -185,11 +203,13 @@ func BuildMetrics(clock clock.Clock, nodes map[string]*node.Node, queue queue.Po
 	podsMetrics := make(map[string]pod.Metrics)
 	QualityOfService := float32(1.0)
 	numPods := int32(0)
-	numSatifisedPods := int32(0)
+	podQoses := float32(0)
 
 	if parralel {
 		var nodesMetricsMutex = sync.RWMutex{}
 		var podsMetricsMutex = sync.RWMutex{}
+		var qosMutex = sync.RWMutex{}
+		var podNumMutex = sync.RWMutex{}
 		nodeNames := make([]string, 0, len(nodes))
 		for k := range nodes {
 			nodeNames = append(nodeNames, k)
@@ -218,9 +238,13 @@ func BuildMetrics(clock clock.Clock, nodes map[string]*node.Node, queue queue.Po
 						podsMetricsMutex.Unlock()
 					}
 				}
-				delta1, delta2 := allocate(clock, node.PodList(), capacity, demand, request)
-				atomic.AddInt32(&numSatifisedPods, delta1)
-				atomic.AddInt32(&numPods, delta2)
+				qos, podNum := allocate(clock, node.PodList(), capacity, demand, request)
+				qosMutex.Lock()
+				podQoses += qos
+				qosMutex.Unlock()
+				podNumMutex.Lock()
+				numPods += podNum
+				podNumMutex.Unlock()
 			}
 		})
 	} else {
@@ -239,9 +263,9 @@ func BuildMetrics(clock clock.Clock, nodes map[string]*node.Node, queue queue.Po
 						podsMetrics[key] = pod.Metrics(clock)
 					}
 				}
-				delta1, delta2 := allocate(clock, node.PodList(), capacity, demand, request)
-				numSatifisedPods += delta1
-				numPods += delta2
+				qos, podNum := allocate(clock, node.PodList(), capacity, demand, request)
+				podQoses += qos
+				numPods += podNum
 
 				for _, pod := range node.PodList() {
 					if !pod.IsTerminated(clock) {
@@ -259,11 +283,12 @@ func BuildMetrics(clock clock.Clock, nodes map[string]*node.Node, queue queue.Po
 	if numPods == 0 {
 		QualityOfService = 1.0
 	} else {
-		QualityOfService = float32(numSatifisedPods) / float32(numPods)
+		QualityOfService = float32(podQoses) / float32(numPods)
 	}
 
 	metrics[NodesMetricsKey] = nodesMetrics
 	metrics[PodsMetricsKey] = make(map[string]pod.Metrics) //podsMetrics
+	fmt.Printf("QualityOfService: %v podQoses %v numPods %v \n", QualityOfService, podQoses, numPods)
 	metrics[QueueMetricsKey] = queue.Metrics(QualityOfService, predictionPenalty)
 
 	return metrics, nil

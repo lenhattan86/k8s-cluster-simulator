@@ -25,13 +25,11 @@ memStr = 'memory'
 show=False
 plotObj = True
 plotOverload = False
-plotTotalRequest = True
-plotTotalDemand = True
 plotOverbook = False
 plotQoS=True
 plotPredictionPenalty=True
 plotUtilization=True
-loads = [plotTotalDemand, True, False, plotOverload, plotOverbook, plotObj, plotTotalRequest, plotQoS, plotPredictionPenalty]
+loads = [plotUtilization, False, plotOverload, plotOverbook, plotQoS, plotPredictionPenalty]
 
 path = "./log"
 arg_len = len(sys.argv) - 1
@@ -146,26 +144,25 @@ def loadLog(filepath) :
             if (loads[0]):
                 cpuUsages.append(totalCpuUsage)
                 memUsages.append(totalMemUsage)
-            if (loads[1]):
                 cpuAllocatables.append(totalCpuCapacity)
                 memAllocatables.append(totalMemCapacity)
-            if (loads[2]):
-                busyNodes.append(busyNode)
-            if (loads[3]):
-                overloadNodes.append(overloadNode) 
-            if (loads[4]):
-                overBookNodes.append(overBookNode)
-            if (loads[5]):
-                maxCpuUsages.append(maxCpuUsage)
-            if (loads[6]):
                 cpuRequests.append(totalCpuRequest)
                 memRequests.append(totalMemRequest)
+                maxCpuUsages.append(maxCpuUsage)
+                totalCpuAllocations.append(totalCpuAllocation)
+                totalMemAllocations.append(totalMemAllocation)
+            if (loads[1]):
+                busyNodes.append(busyNode)
+            if (loads[2]):
+                overloadNodes.append(overloadNode) 
+            if (loads[3]):
+                overBookNodes.append(overBookNode)
 
             # Queue":{"PendingPodsNum":1,"QualityOfService":1,"PredictionPenalty":2.97}
             queue = data['Queue']
-            if (loads[7]):
+            if (loads[4]):
                 QoS.append(float(queue['QualityOfService']))
-            if (loads[8]):
+            if (loads[5]):
                 PredPenalty.append(float(queue['PredictionPenalty']))
 
             i=i+1            
@@ -209,7 +206,7 @@ QoSs = []
 PredPenalties = []
 
 for m in methods:
-    b, ol, ob, u_cpu, u_mem, ur_cpu, ur_mem, a_cpu, a_mem,   mu, c_cpu,c_mem, q, p = loadLog(path+"/kubesim_"+m+".log")
+    b, ol, ob, u_cpu, u_mem, ur_cpu, ur_mem, a_cpu, a_mem, mu, c_cpu,c_mem, q, p = loadLog(path+"/kubesim_"+m+".log")
     busyNodes.append(b)
     overloadNodes.append(ol)
     overbookNodes.append(ob)
@@ -264,8 +261,14 @@ if plotUtilization:
     if cpuCap == 0:
         cpuCap = 1.0
 
-    Y_MAX = 1.0
+    Y_MAX = 1.5
     
+
+    for i in range(methodsNum):
+        if (len(cpuRequests[i]) > utilization_range[1]):
+            utilization_range[1] = len(cpuRequests[i])
+        if (len(cpuRequests[i]) < utilization_range[0]):
+            utilization_range[0] = len(cpuRequests[i])
 
     for i in range(methodsNum):
         cpuR = cpuRequests[i]
@@ -274,11 +277,6 @@ if plotUtilization:
         memD = memUsages[i]
         cpuU = cpuAllocations[i]
         memU = memAllocations[i]
-        if (len(cpuRequests[i]) > utilization_range[1]):
-            utilization_range[1] = len(cpuRequests[i])
-        if (len(cpuRequests[i]) < utilization_range[0]):
-            utilization_range[0] = len(cpuRequests[i])
-
         cpuReqUtil.append(np.average(cpuR[utilization_range[0]:utilization_range[1]])/cpuCap)  
         memReqUtil.append(np.average(memR[utilization_range[0]:utilization_range[1]])/memCap)
 
@@ -292,8 +290,8 @@ if plotUtilization:
     Y_MAX = np.maximum(np.amax(memReqUtil),Y_MAX)
     Y_MAX = np.maximum(np.amax(cpuDemandUtil),Y_MAX)
     Y_MAX = np.maximum(np.amax(memDemandUtil),Y_MAX)
-    # Y_MAX = np.maximum(np.amax(cpuUsageUtil),Y_MAX)
-    # Y_MAX = np.maximum(np.amax(memUsageUtil),Y_MAX)
+    Y_MAX = np.maximum(np.amax(cpuUsageUtil),Y_MAX)
+    Y_MAX = np.maximum(np.amax(memUsageUtil),Y_MAX)
 
     x = np.arange(methodsNum) 
     width = GBAR_WIDTH/2
@@ -306,7 +304,7 @@ if plotUtilization:
     ax.set_ylabel('Request')
     ax.set_xticks(x)
     ax.set_xticklabels(labels)
-    ax.legend()    
+    ax.legend( loc='best')    
     plt.ylim(0,Y_MAX*1.1)
 
     fig.savefig(FIG_PATH+"/request-avg.pdf", bbox_inches='tight')
@@ -319,7 +317,7 @@ if plotUtilization:
     ax.set_ylabel('Demand')
     ax.set_xticks(x)
     ax.set_xticklabels(labels)
-    ax.legend()    
+    ax.legend( loc='best')    
     plt.ylim(0,Y_MAX*1.1)
 
     fig.savefig(FIG_PATH+"/demand-avg.pdf", bbox_inches='tight')
@@ -332,12 +330,12 @@ if plotUtilization:
     ax.set_ylabel('Usage')
     ax.set_xticks(x)
     ax.set_xticklabels(labels)
-    ax.legend()    
+    ax.legend( loc='best')    
     plt.ylim(0,Y_MAX*1.1)
 
     fig.savefig(FIG_PATH+"/usage-avg.pdf", bbox_inches='tight')
 
-if plotTotalRequest:
+if plotUtilization:
     # Y_MAX = np.amax(cpuRequests)
     fig = plt.figure(figsize=FIG_ONE_COL)
     for i in range(methodsNum):
@@ -369,7 +367,7 @@ if plotTotalRequest:
 
     fig.savefig(FIG_PATH+"/total-request-mem.pdf", bbox_inches='tight')
 
-if plotTotalDemand:
+if plotUtilization:
     # Y_MAX = np.amax(cpuRequests)
     fig = plt.figure(figsize=FIG_ONE_COL)
     for i in range(methodsNum):
@@ -455,8 +453,8 @@ if plotQoS:
     plt.legend(legends, loc='best')
     plt.xlabel(STR_QoS)
     plt.ylabel(STR_CDF)
-    plt.ylim(0,1)
-    plt.xlim(0,1)
+    plt.ylim(0,1.02)
+    plt.xlim(0,1.02)
 
     fig.savefig(FIG_PATH+"/qos_cdf.pdf", bbox_inches='tight')
 

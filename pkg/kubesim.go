@@ -195,6 +195,7 @@ func (k *KubeSim) Run(ctx context.Context) error {
 			if k.schedule() != nil {
 				return err
 			}
+
 			lapse := time.Since(start)
 			if _, ok := scheduler.TimingMap["k.schedule()"]; !ok {
 				scheduler.TimingMap["k.schedule()"] = lapse.Microseconds()
@@ -215,7 +216,7 @@ func (k *KubeSim) Run(ctx context.Context) error {
 				scheduler.TimingMap["metrics.BuildMetrics"] += lapse.Microseconds()
 			}
 
-			PrintMemUsage()
+			// PrintMemUsage()
 
 			scheduler.GlobalMetrics = met
 			scheduler.NodeMetricsMap = scheduler.Estimate(k.nodeNames)
@@ -225,6 +226,7 @@ func (k *KubeSim) Run(ctx context.Context) error {
 			if k.clock.Sub(preMetricsClock) >= k.metricsTick {
 				preMetricsClock = k.clock
 				if err = k.writeMetrics(&met); err != nil {
+					log.L.Errorf("cannot write metrics: %v", met)
 					return err
 				}
 
@@ -236,7 +238,6 @@ func (k *KubeSim) Run(ctx context.Context) error {
 			} else {
 				scheduler.TimingMap["k.writeMetrics"] += lapse.Microseconds()
 			}
-
 			k.clock = k.clock.Add(k.tick)
 		}
 	}
