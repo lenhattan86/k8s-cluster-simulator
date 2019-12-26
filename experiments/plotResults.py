@@ -224,7 +224,7 @@ for m in methods:
     PredPenalties.append(p)
 
 for i in range(methodsNum):
-    if (len(cpuRequests[i]) > data_range[1]):
+    if (len(cpuRequests[i]) < data_range[1]):
         data_range[1] = len(cpuRequests[i])
     if (len(cpuRequests[i]) < data_range[0]):
         data_range[0] = len(cpuRequests[i])
@@ -273,10 +273,13 @@ if plotUtilization:
     for i in range(methodsNum):
         cpuR = cpuRequests[i]
         memR = memRequests[i]
+
         cpuD = cpuUsages[i]
         memD = memUsages[i]
+
         cpuU = cpuAllocations[i]
         memU = memAllocations[i]
+
         cpuReqUtil.append(np.average(cpuR[data_range[0]:data_range[1]])/cpuCap)  
         memReqUtil.append(np.average(memR[data_range[0]:data_range[1]])/memCap)
 
@@ -299,7 +302,7 @@ if plotUtilization:
     # request    
     fig, ax = plt.subplots(figsize=FIG_ONE_COL)
     rects1 = ax.bar(x - width, cpuReqUtil,  width, label=STR_CPU, color=COLOR_CPU)
-    rects2 = ax.bar(x + width, memReqUtil,  width, label=STR_MEM, color=COLOR_MEM)
+    rects2 = ax.bar(x, memReqUtil,  width, label=STR_MEM, color=COLOR_MEM)
     labels = methods
     ax.set_ylabel('Request')
     ax.set_xticks(x)
@@ -312,7 +315,7 @@ if plotUtilization:
     # demand
     fig, ax = plt.subplots(figsize=FIG_ONE_COL)
     rects1 = ax.bar(x - width, cpuDemandUtil,  width, label=STR_CPU, color=COLOR_CPU)
-    rects2 = ax.bar(x + width, memDemandUtil,  width, label=STR_MEM, color=COLOR_MEM)
+    rects2 = ax.bar(x, memDemandUtil,  width, label=STR_MEM, color=COLOR_MEM)
     labels = methods
     ax.set_ylabel('Demand')
     ax.set_xticks(x)
@@ -325,7 +328,7 @@ if plotUtilization:
     # usage
     fig, ax = plt.subplots(figsize=FIG_ONE_COL)
     rects1 = ax.bar(x - width, cpuUsageUtil,  width, label=STR_CPU, color=COLOR_CPU)
-    rects2 = ax.bar(x + width, memUsageUtil,  width, label=STR_MEM, color=COLOR_MEM)
+    rects2 = ax.bar(x, memUsageUtil,  width, label=STR_MEM, color=COLOR_MEM)
     labels = methods
     ax.set_ylabel('Usage')
     ax.set_xticks(x)
