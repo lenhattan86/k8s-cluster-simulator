@@ -31,16 +31,15 @@ const LOAD_PHASE_CACHE = 5
 
 // Pod represents a simulated pod.
 type Pod struct {
-	v1             *v1.Pod
-	spec           spec
-	boundAt        clock.Clock
-	status         Status
-	node           string
-	CurrentMetrics *Metrics
-	path           string // for loading more resource usages.
-	currentPhase   int
-	numPhase       int
-	loadPhase      int
+	v1           *v1.Pod
+	spec         spec
+	boundAt      clock.Clock
+	status       Status
+	node         string
+	path         string // for loading more resource usages.
+	currentPhase int
+	numPhase     int
+	loadPhase    int
 }
 
 // Metrics is a metrics of a pod at one time point.
@@ -153,7 +152,6 @@ func (pod *Pod) Metrics(clock clock.Clock) Metrics {
 		Priority: util.PodPriority(pod.ToV1()),
 		Status:   pod.status,
 	}
-	pod.CurrentMetrics = &metrics
 	return metrics
 }
 

@@ -1,5 +1,5 @@
 #!/bin/bash
-sudo apt update
+sudo apt update; \
 sudo apt-get install -y software-properties-common
 ## setup go
 
