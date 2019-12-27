@@ -55,6 +55,8 @@ def loadLog(filepath) :
     overloadNodes = []
     overBookNodes = []
     QoS = []
+    NumSatifiesPods = []
+    NumPods = []
     PredPenalty = []
 
     with open(filepath) as fp:
@@ -163,6 +165,8 @@ def loadLog(filepath) :
             queue = data['Queue']
             if (loads[4]):
                 QoS.append(float(queue['QualityOfService']))
+                NumSatifiesPods.append(float(queue['NumSatifisedPods']))
+                NumPods.append(float(queue['NumPods']))
             if (loads[5]):
                 PredPenalty.append(float(queue['PredictionPenalty']))
 
@@ -173,7 +177,9 @@ def loadLog(filepath) :
 
     fp.close()
 
-    return busyNodes, overloadNodes, overBookNodes, cpuUsages, memUsages, cpuRequests, memRequests, totalCpuAllocations, totalMemAllocations, maxCpuUsages, cpuAllocatables, memAllocatables, QoS, PredPenalty
+    return busyNodes, overloadNodes, overBookNodes, cpuUsages, memUsages, cpuRequests, \
+        memRequests, totalCpuAllocations, totalMemAllocations, maxCpuUsages, cpuAllocatables, memAllocatables, \
+        QoS, NumSatifiesPods, NumPods, PredPenalty 
 
 def formatQuatity(str):
     strArray = re.split('(\d+)', str)
@@ -205,10 +211,12 @@ memAllocations = []
 cpuRequests = []
 memRequests = []
 QoSs = []
+NumSatifiesPods = []
+NumPods = []
 PredPenalties = []
 
 for m in methods:
-    b, ol, ob, u_cpu, u_mem, ur_cpu, ur_mem, a_cpu, a_mem, mu, c_cpu,c_mem, q, p = loadLog(path+"/kubesim_"+m+".log")
+    b, ol, ob, u_cpu, u_mem, ur_cpu, ur_mem, a_cpu, a_mem, mu, c_cpu, c_mem, q, nsp, nps, p = loadLog(path+"/kubesim_"+m+".log")
     busyNodes.append(b)
     overloadNodes.append(ol)
     overbookNodes.append(ob)
@@ -222,6 +230,8 @@ for m in methods:
     cpuRequests.append(ur_cpu)
     memRequests.append(ur_mem)
     QoSs.append(q)
+    NumSatifiesPods.append(nsp)
+    NumPods.append(nps)
     PredPenalties.append(p)
 
 for i in range(methodsNum):
@@ -495,22 +505,49 @@ if plotQoS:
 
     ## plot figures   
     fig, ax = plt.subplots(figsize=FIG_ONE_COL)
+    Y_MAX = 0
     for i in range(methodsNum):
         qos = QoSs[i][data_range[0]:data_range[1]]        
         violation = 0
         for j in range (len(qos)):
             if round(qos[j],2) < target_qos :
                 violation = violation + 1
-
-        rects = ax.bar(i - BAR_WIDTH/2, round(violation*100/len(qos),1),  BAR_WIDTH, color=colors[i])
+        y = round(violation*100/len(qos),1)
+        Y_MAX = max(y,Y_MAX)
+        rects = ax.bar(i - BAR_WIDTH/2, y,  BAR_WIDTH, color=colors[i])
         autolabel(rects, ax)
 
     labels = methods
     ax.set_ylabel(STR_QoS_Violation)
     ax.set_xticks(x)
     ax.set_xticklabels(labels)
+    plt.ylim([0, Y_MAX*1.2])
 
-    fig.savefig(FIG_PATH+"/qos_violation.pdf", bbox_inches='tight')
+    fig.savefig(FIG_PATH+"/qos_violation_time.pdf", bbox_inches='tight')
+
+    ## plot figures   
+    fig, ax = plt.subplots(figsize=FIG_ONE_COL)
+    Y_MAX = 0
+    for i in range(methodsNum):
+        nsp = NumSatifiesPods[i][data_range[0]:data_range[1]]        
+        np = NumPods[i][data_range[0]:data_range[1]]        
+        violation = 0
+        total = 0
+        for j in range (len(nsp)):
+            total = total + np[j]
+            violation = violation + np[j] - nsp[j]
+        y = round(violation*100/total,1)
+        Y_MAX = max(y,Y_MAX)
+        rects = ax.bar(i - BAR_WIDTH/2, y ,  BAR_WIDTH, color=colors[i])
+        autolabel(rects, ax)
+
+    labels = methods
+    ax.set_ylabel(STR_QoS_Violation)
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels)
+    plt.ylim([0, Y_MAX*1.2])
+
+    fig.savefig(FIG_PATH+"/qos_violation_pod.pdf", bbox_inches='tight')
 
 if plotPredictionPenalty:
     fig = plt.figure(figsize=FIG_ONE_COL)

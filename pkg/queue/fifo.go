@@ -122,8 +122,8 @@ func (fifo *FIFOQueue) Metrics(qualityOfService, predictionPenalty, podQoses, nu
 		PendingPodsNum:    len(fifo.queue),
 		QualityOfService:  qualityOfService,
 		PredictionPenalty: predictionPenalty,
-		numSatifisedPods:  podQoses,
-		numPods:           numPods,
+		NumSatifisedPods:  podQoses,
+		NumPods:           numPods,
 	}
 }
 

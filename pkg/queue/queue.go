@@ -26,8 +26,8 @@ type Metrics struct {
 	PendingPodsNum    int
 	QualityOfService  float32
 	PredictionPenalty float32
-	numSatifisedPods  float32
-	numPods           float32
+	NumSatifisedPods  float32
+	NumPods           float32
 }
 
 var (
