@@ -266,88 +266,61 @@ func BuildMetrics(clock clock.Clock, nodes map[string]*node.Node, queue queue.Po
 	numPods := float32(0)
 	podQoses := float32(0)
 
-	if parralel {
-		var nodesMetricsMutex = sync.RWMutex{}
-		var podsMetricsMutex = sync.RWMutex{}
-		var qosMutex = sync.RWMutex{}
-		var podNumMutex = sync.RWMutex{}
-		nodeNames := make([]string, 0, len(nodes))
-		for k := range nodes {
-			nodeNames = append(nodeNames, k)
-		}
-		ctx, _ := context.WithCancel(context.Background())
-		workqueue.ParallelizeUntil(ctx, workerNum, len(nodes), func(i int) {
-			name := nodeNames[i]
-			node := nodes[name]
-			nodeMetrics := node.Metrics(clock)
-			resourceAllocation := v1.ResourceList{}
-			if !isTinyMetrics {
-				capacity := nodeinfo.NewResource(nodeMetrics.Allocatable)
-				demand := nodeinfo.NewResource(nodeMetrics.TotalResourceUsage)
-				request := nodeinfo.NewResource(nodeMetrics.TotalResourceRequest)
-				for _, pod := range node.PodList() {
-					if !pod.IsTerminated(clock) {
-						key, err := util.PodKey(pod.ToV1())
-						if err != nil {
-							return
-						}
-						podMetrics := pod.Metrics(clock)
-						podsMetricsMutex.Lock()
-						podsMetrics[key] = podMetrics
-						podsMetricsMutex.Unlock()
-					}
-				}
-				qos, podNum := allocate(clock, node.PodList(), capacity, demand, request, podsMetrics, &podsMetricsMutex)
-				for _, pod := range node.PodList() {
-					if !pod.IsTerminated(clock) {
-						resourceAllocation = util.ResourceListSum(resourceAllocation, pod.CurrentMetrics.ResourceAllocation)
-					}
-				}
-				qosMutex.Lock()
-				podQoses += qos
-				qosMutex.Unlock()
-				podNumMutex.Lock()
-				numPods += podNum
-				podNumMutex.Unlock()
-			}
-			nodeMetrics.TotalResourceAllocation = resourceAllocation
-			nodesMetricsMutex.Lock()
-			nodesMetrics[name] = nodeMetrics
-			nodesMetricsMutex.Unlock()
-		})
-	} else {
-		for name, node := range nodes {
-			nodesMetrics[name] = node.Metrics(clock)
-			if !isTinyMetrics {
-				capacity := nodeinfo.NewResource(nodesMetrics[name].Allocatable)
-				demand := nodeinfo.NewResource(nodesMetrics[name].TotalResourceUsage)
-				request := nodeinfo.NewResource(nodesMetrics[name].TotalResourceRequest)
-				for _, pod := range node.PodList() {
-					if !pod.IsTerminated(clock) {
-						key, err := util.PodKey(pod.ToV1())
-						if err != nil {
-							return Metrics{}, err
-						}
-						podsMetrics[key] = pod.Metrics(clock)
-					}
-				}
-				qos, podNum := allocate(clock, node.PodList(), capacity, demand, request)
-				podQoses += qos
-				numPods += podNum
-
-				for _, pod := range node.PodList() {
-					if !pod.IsTerminated(clock) {
-						key, err := util.PodKey(pod.ToV1())
-						if err != nil {
-							return Metrics{}, err
-						}
-						podsMetrics[key] = *pod.CurrentMetrics
-						numPods++
-					}
-				}
-			}
-		}
+	var nodesMetricsMutex = sync.RWMutex{}
+	var podsMetricsMutex = sync.RWMutex{}
+	var qosMutex = sync.RWMutex{}
+	var podNumMutex = sync.RWMutex{}
+	nodeNames := make([]string, 0, len(nodes))
+	for k := range nodes {
+		nodeNames = append(nodeNames, k)
 	}
+	ctx, _ := context.WithCancel(context.Background())
+	workqueue.ParallelizeUntil(ctx, workerNum, len(nodes), func(i int) {
+		name := nodeNames[i]
+		node := nodes[name]
+		nodeMetrics := node.Metrics(clock)
+		resourceAllocation := v1.ResourceList{}
+		if !isTinyMetrics {
+			capacity := nodeinfo.NewResource(nodeMetrics.Allocatable)
+			demand := nodeinfo.NewResource(nodeMetrics.TotalResourceUsage)
+			request := nodeinfo.NewResource(nodeMetrics.TotalResourceRequest)
+			for _, pod := range node.PodList() {
+				if !pod.IsTerminated(clock) {
+					key, err := util.PodKey(pod.ToV1())
+					if err != nil {
+						return
+					}
+					podMetrics := pod.Metrics(clock)
+					podsMetricsMutex.Lock()
+					podsMetrics[key] = podMetrics
+					podsMetricsMutex.Unlock()
+				}
+			}
+			qos, podNum := allocate(clock, node.PodList(), capacity, demand, request, podsMetrics, &podsMetricsMutex)
+			for _, pod := range node.PodList() {
+				if !pod.IsTerminated(clock) {
+					key, err := util.PodKey(pod.ToV1())
+					if err != nil {
+						continue
+					}
+					podsMetricsMutex.Lock()
+					currMetrics := podsMetrics[key]
+					podsMetricsMutex.Unlock()
+					resourceAllocation = util.ResourceListSum(resourceAllocation, currMetrics.ResourceAllocation)
+				}
+			}
+			qosMutex.Lock()
+			podQoses += qos
+			qosMutex.Unlock()
+			podNumMutex.Lock()
+			numPods += podNum
+			podNumMutex.Unlock()
+		}
+		nodeMetrics.TotalResourceAllocation = resourceAllocation
+		nodesMetricsMutex.Lock()
+		nodesMetrics[name] = nodeMetrics
+		nodesMetricsMutex.Unlock()
+	})
 	if numPods == 0 {
 		QualityOfService = 1.0
 	} else {
