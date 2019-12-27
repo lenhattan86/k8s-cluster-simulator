@@ -16,6 +16,7 @@ package queue
 
 import (
 	"container/heap"
+	"fmt"
 
 	v1 "k8s.io/api/core/v1"
 
@@ -165,6 +166,7 @@ func (pq *PriorityQueue) NominatedPods(nodeName string) []*v1.Pod {
 }
 
 func (pq *PriorityQueue) Metrics(qualityOfService, predictionPenalty, podQoses, numPods float32) Metrics {
+	fmt.Println("priority_queue.Metrics")
 	return Metrics{
 		PendingPodsNum:    pq.inner.Len(),
 		QualityOfService:  qualityOfService,
