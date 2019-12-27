@@ -26,6 +26,8 @@ type Metrics struct {
 	PendingPodsNum    int
 	QualityOfService  float32
 	PredictionPenalty float32
+	numSatifisedPods  float32
+	numPods           float32
 }
 
 var (
@@ -77,5 +79,5 @@ type PodQueue interface {
 	RemoveNominatedNode(pod *v1.Pod) error
 
 	// Metrics returns a metrics of this PodQueue.
-	Metrics(QualityOfService, PredictionPenalty float32) Metrics
+	Metrics(QualityOfService, PredictionPenalty, podQoses, numPods float32) Metrics
 }

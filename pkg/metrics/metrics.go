@@ -209,7 +209,7 @@ func BuildMetrics(clock clock.Clock, nodes map[string]*node.Node, queue queue.Po
 	nodesMetrics := make(map[string]node.Metrics)
 	podsMetrics := make(map[string]pod.Metrics)
 	QualityOfService := float32(1.0)
-	numPods := int32(0)
+	numPods := float32(0)
 	podQoses := float32(0)
 
 	if parralel {
@@ -302,7 +302,7 @@ func BuildMetrics(clock clock.Clock, nodes map[string]*node.Node, queue queue.Po
 
 	metrics[NodesMetricsKey] = nodesMetrics
 	metrics[PodsMetricsKey] = make(map[string]pod.Metrics) //podsMetrics
-	metrics[QueueMetricsKey] = queue.Metrics(QualityOfService, predictionPenalty)
+	metrics[QueueMetricsKey] = queue.Metrics(QualityOfService, predictionPenalty, podQoses, numPods)
 
 	return metrics, nil
 }

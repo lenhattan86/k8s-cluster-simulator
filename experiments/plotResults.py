@@ -189,6 +189,7 @@ def formatQuatity(str):
 
 methods = ["worstfit","oversub", "proposed"]
 colors = [COLOR_WORST_FIT, COLOR_OVER_SUB, COLOR_PROPOSED]
+proposed_idx = 2
 # methods = ["oneshot","worstfit"]
 methodsNum = len(methods)
 busyNodes = []
@@ -268,7 +269,7 @@ if plotUtilization:
     if cpuCap == 0:
         cpuCap = 1.0
 
-    Y_MAX = 1.5
+    Y_MAX = 2.2
 
     for i in range(methodsNum):
         cpuR = cpuRequests[i]
@@ -288,13 +289,6 @@ if plotUtilization:
 
         cpuUsageUtil.append(round(np.average(cpuU[data_range[0]:data_range[1]])/cpuCap,2))  
         memUsageUtil.append(round(np.average(memU[data_range[0]:data_range[1]])/memCap,2))
-
-    Y_MAX = np.maximum(np.amax(cpuReqUtil),Y_MAX)
-    Y_MAX = np.maximum(np.amax(memReqUtil),Y_MAX)
-    Y_MAX = np.maximum(np.amax(cpuDemandUtil),Y_MAX)
-    Y_MAX = np.maximum(np.amax(memDemandUtil),Y_MAX)
-    Y_MAX = np.maximum(np.amax(cpuUsageUtil),Y_MAX)
-    Y_MAX = np.maximum(np.amax(memUsageUtil),Y_MAX)
 
     x = np.arange(methodsNum) 
     width = GBAR_WIDTH/2
@@ -520,8 +514,7 @@ if plotQoS:
 
 if plotPredictionPenalty:
     fig = plt.figure(figsize=FIG_ONE_COL)
-    i=0
-    plt.plot(range(0,len(PredPenalties[i])*tick,tick), PredPenalties[i])
+    plt.plot(range(0,len(PredPenalties[proposed_idx])*tick,tick), PredPenalties[proposed_idx])
     
     plt.xlabel(STR_TIME_MIN)
     plt.ylabel(STR_Pred_Penalty)
