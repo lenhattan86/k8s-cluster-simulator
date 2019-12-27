@@ -77,7 +77,7 @@ func minFloat32(a, b float32) float32 {
 	return b
 }
 
-func allocate(clock clock.Clock, pods []*pod.Pod, capacity, demand, request *nodeinfo.Resource) (float32, int32) {
+func allocate(clock clock.Clock, pods []*pod.Pod, capacity, demand, request *nodeinfo.Resource) (float32, float32) {
 
 	cpuFairSharePolicy := whichSharePolicy(demand.MilliCPU, request.MilliCPU, capacity.MilliCPU)
 	memFairSharePolicy := whichSharePolicy(demand.Memory, request.Memory, capacity.Memory)
@@ -88,7 +88,7 @@ func allocate(clock clock.Clock, pods []*pod.Pod, capacity, demand, request *nod
 			runingPods = append(runingPods, pod)
 		}
 	}
-	numRunningPods := int32(len(runingPods))
+	numRunningPods := float32(len(runingPods))
 	if numRunningPods == 0 {
 		return 0, 0
 	}
