@@ -472,7 +472,6 @@ if plotOverbook:
 
 ## plot QoS
 if plotQoS:
-
     fig = plt.figure(figsize=FIG_ONE_COL)
     for i in range(methodsNum):
         qos = QoSs[i][data_range[0]:data_range[1]]
@@ -485,7 +484,6 @@ if plotQoS:
     plt.ylim(0,1.1)
 
     fig.savefig(FIG_PATH+"/qos.pdf", bbox_inches='tight')
-    ##    
     
     ## plot figures   
     fig = plt.figure(figsize=FIG_ONE_COL)
@@ -533,12 +531,12 @@ if plotQoS:
         np = NumPods[i][data_range[0]:data_range[1]]        
         violation = 0
         total = 0
-        for j in range (len(nsp)):
+        for j in range(len(nsp)):
             total = total + np[j]
             violation = violation + np[j] - nsp[j]
         y = round(violation*100/total,1)
-        Y_MAX = max(y,Y_MAX)
-        rects = ax.bar(i - BAR_WIDTH/2, y ,  BAR_WIDTH, color=colors[i])
+        Y_MAX = max(y, Y_MAX)
+        rects = ax.bar(i - BAR_WIDTH/2, y,  BAR_WIDTH, color=colors[i])
         autolabel(rects, ax)
 
     labels = methods
