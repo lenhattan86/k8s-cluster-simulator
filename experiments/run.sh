@@ -10,7 +10,7 @@ ONE_SHOT="oneshot"
 WORST_FIT="worstfit"
 GENERIC="generic"
 
-oversub=2.15
+oversub=2.2
 
 workloadSubsetFactor=1
 isDebug=true
