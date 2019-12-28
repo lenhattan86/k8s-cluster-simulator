@@ -38,7 +38,7 @@ then
     tick=60
     metricsTick=60
 else
-    nodeNum=1
+    nodeNum=2
     totalPodNumber=40
     targetNum=40
     cpuPerNode=16

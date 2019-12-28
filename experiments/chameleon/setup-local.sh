@@ -8,8 +8,7 @@ sudo tar -xvf go1.13.3.linux-amd64.tar.gz; \
 sudo mv go /usr/local
 
 export GOROOT=/usr/local/go; \
-export PATH=/usr/local/go/bin:$PATH
-
+export PATH=/usr/local/go/bin:$PATH; \
 echo """export GOROOT=/usr/local/go
 export PATH=/usr/local/go/bin:$PATH
 """ >> .bashrc

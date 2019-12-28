@@ -98,12 +98,12 @@ def loadLog(filepath) :
                 usageDict = node['TotalResourceUsage']
                 for rsName in usageDict:
                     if(rsName==cpuStr):
-                        cpuUsage = formatQuatity(usageDict[rsName])
+                        cpuUsage = formatCpuQuatity(usageDict[rsName])
                         totalCpuUsage = totalCpuUsage+ cpuUsage
                         if cpuUsage > maxCpuUsage:
                             maxCpuUsage = cpuUsage
                     elif(rsName==memStr):
-                        memUsage = formatQuatity(usageDict[rsName])
+                        memUsage = formatMemQuatity(usageDict[rsName])
                         totalMemUsage = totalMemUsage+ memUsage
                         if memUsage > maxMemUsage:
                             maxMemUsage = memUsage
@@ -111,28 +111,28 @@ def loadLog(filepath) :
                 allocatableDict = node['Allocatable']    
                 for rsName in allocatableDict:
                     if(rsName==cpuStr):
-                        cpuAllocatable = formatQuatity(allocatableDict[rsName])
+                        cpuAllocatable = formatCpuQuatity(allocatableDict[rsName])
                         totalCpuCapacity = totalCpuCapacity + cpuAllocatable
                     elif(rsName==memStr):
-                        memAllocatable = formatQuatity(allocatableDict[rsName])
+                        memAllocatable = formatMemQuatity(allocatableDict[rsName])
                         totalMemCapacity = totalMemCapacity + memAllocatable
                 
                 requestDict = node['TotalResourceRequest']    
                 for rsName in requestDict:
                     if(rsName==cpuStr):
-                        cpuRequest = formatQuatity(requestDict[rsName])
+                        cpuRequest = formatCpuQuatity(requestDict[rsName])
                         totalCpuRequest = totalCpuRequest + cpuRequest
                     elif(rsName==memStr):
-                        memRequest = formatQuatity(requestDict[rsName])
+                        memRequest = formatMemQuatity(requestDict[rsName])
                         totalMemRequest = totalMemRequest + memRequest
                 
                 allocationDict = node['TotalResourceAllocation']    
                 for rsName in allocationDict:
                     if(rsName==cpuStr):
-                        cpuAllocation = formatQuatity(allocationDict[rsName])
+                        cpuAllocation = formatCpuQuatity(allocationDict[rsName])
                         totalCpuAllocation = totalCpuAllocation + cpuAllocation
                     elif(rsName==memStr):
-                        memAllocation = formatQuatity(allocationDict[rsName])
+                        memAllocation = formatMemQuatity(allocationDict[rsName])
                         totalMemAllocation = totalMemAllocation + memAllocation
 
                 if(cpuUsage > cpuAllocatable or memUsage > memAllocatable):
@@ -181,17 +181,37 @@ def loadLog(filepath) :
         memRequests, totalCpuAllocations, totalMemAllocations, maxCpuUsages, cpuAllocatables, memAllocatables, \
         QoS, NumSatifiesPods, NumPods, PredPenalty 
 
-def formatQuatity(str):
+def formatCpuQuatity(str):
     strArray = re.split('(\d+)', str)
     val = float(strArray[1])
     scaleStr = strArray[2]
-    if scaleStr != "":
-        if(scaleStr == "m"):
-            val = val/1000        
-        elif (scaleStr == "Mi"):
-            val = val/1024
+    if(scaleStr == "m"):
+        val = val/1000        
+    elif (scaleStr == "Mi"):
+        val = val/1024
+    elif (scaleStr == ""):
+        val = val
+    else:
+        print("error @ formatMemQuatity "+str)
 
     return val
+
+def formatMemQuatity(str):
+    strArray = re.split('(\d+)', str)
+    val = float(strArray[1])
+    scaleStr = strArray[2]
+    if(scaleStr == "m"):
+        val = val/(1000*1000)
+    elif (scaleStr == "Mi"):
+        val = val/(1024*1024)
+    elif (scaleStr == "Gi"):
+        va = val
+    elif (scaleStr == ""): # byte
+        val = val/(1024*1024*1024)
+    else:
+        print("error @ formatMemQuatity "+str)
+    return val
+
 
 methods = ["worstfit","oversub", "proposed"]
 colors = [COLOR_WORST_FIT, COLOR_OVER_SUB, COLOR_PROPOSED]

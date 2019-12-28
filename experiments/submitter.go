@@ -249,7 +249,7 @@ func (s *mySubmitter) newRandomPod(idx uint64, clock clock.Clock) *v1.Pod {
 					Resources: v1.ResourceRequirements{
 						Requests: v1.ResourceList{
 							"cpu":            resource.MustParse(fmt.Sprintf("%d", int(requestCpu))),
-							"memory":         resource.MustParse(fmt.Sprintf("%dGi", int(requestMem))),
+							"memory":         resource.MustParse(fmt.Sprintf("%dMi", int(requestMem*1024))),
 							"nvidia.com/gpu": resource.MustParse("0"),
 						},
 						Limits: v1.ResourceList{

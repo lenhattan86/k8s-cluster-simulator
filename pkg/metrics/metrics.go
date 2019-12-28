@@ -16,6 +16,7 @@ package metrics
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/clock"
@@ -77,17 +78,11 @@ func minFloat32(a, b float32) float32 {
 	return b
 }
 
-func allocate(clock clock.Clock, pods []*pod.Pod, capacity, demand, request *nodeinfo.Resource, podsMetrics map[string]pod.Metrics, podsMetricsMutex *sync.RWMutex) (float32, float32) {
+func allocate(clock clock.Clock, runingPodKeys []string, capacity, demand, request *nodeinfo.Resource, podsMetrics map[string]pod.Metrics, podsMetricsMutex *sync.RWMutex) (float32, float32) {
 	cpuFairSharePolicy := whichSharePolicy(demand.MilliCPU, request.MilliCPU, capacity.MilliCPU)
 	memFairSharePolicy := whichSharePolicy(demand.Memory, request.Memory, capacity.Memory)
 
-	runingPods := make([]*pod.Pod, 0, len(pods))
-	for _, pod := range pods {
-		if !pod.IsTerminated(clock) {
-			runingPods = append(runingPods, pod)
-		}
-	}
-	numRunningPods := float32(len(runingPods))
+	numRunningPods := float32(len(runingPodKeys))
 	if numRunningPods == 0 {
 		return 0, 0
 	}
@@ -102,11 +97,7 @@ func allocate(clock clock.Clock, pods []*pod.Pod, capacity, demand, request *nod
 		if d > 0 {
 			C := c
 			R := r
-			for _, pod := range runingPods {
-				key, err := util.PodKey(pod.ToV1())
-				if err != nil {
-					continue
-				}
+			for _, key := range runingPodKeys {
 				podsMetricsMutex.Lock()
 				currMetrics := podsMetrics[key]
 				podsMetricsMutex.Unlock()
@@ -114,8 +105,10 @@ func allocate(clock clock.Clock, pods []*pod.Pod, capacity, demand, request *nod
 				pRequest := nodeinfo.NewResource(currMetrics.ResourceRequest)
 				pUsage := nodeinfo.NewResource(currMetrics.ResourceUsage)
 				guarantee := int64(0)
+
 				if R > 0 {
-					guarantee = min(C*pRequest.MilliCPU/R, pUsage.MilliCPU)
+					guarantee = min(C*pRequest.MilliCPU/R, pRequest.MilliCPU)
+					guarantee = min(pUsage.MilliCPU, guarantee)
 				}
 				c -= guarantee
 				d -= guarantee
@@ -132,11 +125,7 @@ func allocate(clock clock.Clock, pods []*pod.Pod, capacity, demand, request *nod
 		if d > 0 && c > 0 {
 			C := c
 			D := d
-			for _, pod := range runingPods {
-				key, err := util.PodKey(pod.ToV1())
-				if err != nil {
-					continue
-				}
+			for _, key := range runingPodKeys {
 				podsMetricsMutex.Lock()
 				currMetrics := podsMetrics[key]
 				podsMetricsMutex.Unlock()
@@ -164,11 +153,7 @@ func allocate(clock clock.Clock, pods []*pod.Pod, capacity, demand, request *nod
 		if d > 0 {
 			C := c
 			R := r
-			for _, pod := range runingPods {
-				key, err := util.PodKey(pod.ToV1())
-				if err != nil {
-					continue
-				}
+			for _, key := range runingPodKeys {
 				podsMetricsMutex.Lock()
 				currMetrics := podsMetrics[key]
 				podsMetricsMutex.Unlock()
@@ -177,7 +162,8 @@ func allocate(clock clock.Clock, pods []*pod.Pod, capacity, demand, request *nod
 				pUsage := nodeinfo.NewResource(currMetrics.ResourceUsage)
 				guarantee := int64(0)
 				if R > 0 {
-					guarantee = min(C*pRequest.Memory/R, pUsage.Memory)
+					guarantee = min(C*pRequest.Memory/R, pRequest.Memory)
+					guarantee = min(pUsage.Memory, guarantee)
 				}
 				c -= guarantee
 				d -= guarantee
@@ -195,19 +181,16 @@ func allocate(clock clock.Clock, pods []*pod.Pod, capacity, demand, request *nod
 		if d > 0 && c > 0 {
 			C := c
 			D := d
-			for _, pod := range runingPods {
-				key, err := util.PodKey(pod.ToV1())
-				if err != nil {
-					continue
-				}
+			for _, key := range runingPodKeys {
 				podsMetricsMutex.Lock()
 				currMetrics := podsMetrics[key]
 				podsMetricsMutex.Unlock()
-
 				pUsage := nodeinfo.NewResource(currMetrics.ResourceUsage)
 				pAllocation := nodeinfo.NewResource(currMetrics.ResourceAllocation)
 				extra := max(pUsage.Memory-pAllocation.Memory, 0)
-				pAllocation.Memory += min(int64(C*extra/D), extra)
+				extra = min(int64(float64(C)/float64(D)*float64(extra)), extra)
+				fmt.Printf("extra: %v, pUsage.Memory: %v pAllocation.Memory: %v, C: %v, D: %v \n", extra, pUsage.Memory, pAllocation.Memory, C, D)
+				pAllocation.Memory += extra
 				currMetrics.ResourceAllocation = pAllocation.ResourceList()
 
 				podsMetricsMutex.Lock()
@@ -217,11 +200,7 @@ func allocate(clock clock.Clock, pods []*pod.Pod, capacity, demand, request *nod
 		}
 	}
 
-	for _, pod := range runingPods {
-		key, err := util.PodKey(pod.ToV1())
-		if err != nil {
-			continue
-		}
+	for _, key := range runingPodKeys {
 		podsMetricsMutex.Lock()
 		currMetrics := podsMetrics[key]
 		podsMetricsMutex.Unlock()
@@ -290,7 +269,9 @@ func BuildMetrics(clock clock.Clock, nodes map[string]*node.Node, queue queue.Po
 			capacity := nodeinfo.NewResource(nodeMetrics.Allocatable)
 			demand := nodeinfo.NewResource(nodeMetrics.TotalResourceUsage)
 			request := nodeinfo.NewResource(nodeMetrics.TotalResourceRequest)
-			for _, pod := range node.PodList() {
+			pods := node.PodList()
+			runingPodKeys := make([]string, 0, len(pods))
+			for _, pod := range pods {
 				if !pod.IsTerminated(clock) {
 					key, err := util.PodKey(pod.ToV1())
 					if err != nil {
@@ -300,20 +281,15 @@ func BuildMetrics(clock clock.Clock, nodes map[string]*node.Node, queue queue.Po
 					podsMetricsMutex.Lock()
 					podsMetrics[key] = podMetrics
 					podsMetricsMutex.Unlock()
+					runingPodKeys = append(runingPodKeys, key)
 				}
 			}
-			qos, podNum := allocate(clock, node.PodList(), capacity, demand, request, podsMetrics, &podsMetricsMutex)
-			for _, pod := range node.PodList() {
-				if !pod.IsTerminated(clock) {
-					key, err := util.PodKey(pod.ToV1())
-					if err != nil {
-						continue
-					}
-					podsMetricsMutex.Lock()
-					currMetrics := podsMetrics[key]
-					podsMetricsMutex.Unlock()
-					resourceAllocation = util.ResourceListSum(resourceAllocation, currMetrics.ResourceAllocation)
-				}
+			qos, podNum := allocate(clock, runingPodKeys, capacity, demand, request, podsMetrics, &podsMetricsMutex)
+			// compute the real resource allocated (usage)
+			for _, key := range runingPodKeys {
+				podsMetricsMutex.Lock()
+				resourceAllocation = util.ResourceListSum(resourceAllocation, podsMetrics[key].ResourceAllocation)
+				podsMetricsMutex.Unlock()
 			}
 			qosMutex.Lock()
 			podQoses += qos

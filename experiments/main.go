@@ -79,9 +79,9 @@ var (
 	meanSec              = 10.0
 	meanCpu              = 4.0
 	cpuStd               = 3.0
-	phasNum              = 1000
+	phasNum              = 10
 	requestCpu           = 8.0
-	requestMem           = 0
+	requestMem           = 0.001
 	startClockStr        = "2019-01-01T00:00:00+09:00"
 	endClockStr          = "3019-01-01T00:00:00+09:00"
 	startTimestampTrace  = "0"
