@@ -301,7 +301,7 @@ if plotUtilization:
     if cpuCap == 0:
         cpuCap = 1.0
 
-    Y_MAX = 2.2
+    Y_MAX = 200
 
     for i in range(methodsNum):
         cpuR = cpuRequests[i]
@@ -313,14 +313,14 @@ if plotUtilization:
         cpuU = cpuAllocations[i]
         memU = memAllocations[i]
 
-        cpuReqUtil.append(round(np.average(cpuR[data_range[0]:data_range[1]])/cpuCap, 2))  
-        memReqUtil.append(round(np.average(memR[data_range[0]:data_range[1]])/memCap, 2))
+        cpuReqUtil.append(round(np.average(cpuR[data_range[0]:data_range[1]])/cpuCap*100, 0))  
+        memReqUtil.append(round(np.average(memR[data_range[0]:data_range[1]])/memCap*100, 0))
 
-        cpuDemandUtil.append(round(np.average(cpuD[data_range[0]:data_range[1]])/cpuCap, 2))  
-        memDemandUtil.append(round(np.average(memD[data_range[0]:data_range[1]])/memCap, 2))
+        cpuDemandUtil.append(round(np.average(cpuD[data_range[0]:data_range[1]])/cpuCap*100, 0))  
+        memDemandUtil.append(round(np.average(memD[data_range[0]:data_range[1]])/memCap*100, 0))
 
-        cpuUsageUtil.append(round(np.average(cpuU[data_range[0]:data_range[1]])/cpuCap,2))  
-        memUsageUtil.append(round(np.average(memU[data_range[0]:data_range[1]])/memCap,2))
+        cpuUsageUtil.append(round(np.average(cpuU[data_range[0]:data_range[1]])/cpuCap*100,0))  
+        memUsageUtil.append(round(np.average(memU[data_range[0]:data_range[1]])/memCap*100,0))
 
     x = np.arange(methodsNum) 
     width = GBAR_WIDTH/2
@@ -332,7 +332,7 @@ if plotUtilization:
     rects = ax.bar(x, memReqUtil,  width, label=STR_MEM, color=COLOR_MEM)
     autolabel(rects, ax)
     labels = methods
-    ax.set_ylabel('Request')
+    ax.set_ylabel('Request (%)')
     ax.set_xticks(x)
     ax.set_xticklabels(labels)
     ax.legend( loc='best')    
@@ -347,7 +347,7 @@ if plotUtilization:
     rects = ax.bar(x, memDemandUtil,  width, label=STR_MEM, color=COLOR_MEM)
     autolabel(rects, ax)
     labels = methods
-    ax.set_ylabel('Demand')
+    ax.set_ylabel('Demand (%)')
     ax.set_xticks(x)
     ax.set_xticklabels(labels)
     ax.legend( loc='best')    
@@ -362,7 +362,7 @@ if plotUtilization:
     rects = ax.bar(x, memUsageUtil,  width, label=STR_MEM, color=COLOR_MEM)
     autolabel(rects, ax)
     labels = methods
-    ax.set_ylabel('Usage')
+    ax.set_ylabel('Usage (%)')
     ax.set_xticks(x)
     ax.set_xticklabels(labels)
     ax.legend( loc='best')    
