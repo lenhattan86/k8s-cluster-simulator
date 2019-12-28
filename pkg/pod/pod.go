@@ -27,7 +27,7 @@ import (
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/util"
 )
 
-const LOAD_PHASE_CACHE = 5
+const LOAD_PHASE_CACHE = 50
 
 // Pod represents a simulated pod.
 type Pod struct {
@@ -98,12 +98,84 @@ func (status Status) MarshalJSON() ([]byte, error) {
 // NewPod creates a pod with the given v1.Pod, the clock at which the pod was bound to a node, and
 // the pod's status.
 func NewPod(pod *v1.Pod, boundAt clock.Clock, status Status, node string, currentPhase, loadPhase int, currentSpec spec) (*Pod, error) {
+	path := parsePath(pod)
+	// load specs from file.
+	podFromFile, err := loadPodFromFile(path)
+	if err != nil {
+		return nil, err
+	}
+	spec, numPhase, err := parseSpec(podFromFile)
+	if err != nil {
+		return nil, err
+	}
+
+	// spec, numPhase, err := parseSpec(pod)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	newLoadPhase := loadPhase + LOAD_PHASE_CACHE
+	if path != "" {
+		if newLoadPhase >= numPhase {
+			newLoadPhase = numPhase
+			path = ""
+		}
+		if currentSpec == nil {
+			spec = spec[:newLoadPhase]
+		} else {
+			spec = append(currentSpec, spec[loadPhase:newLoadPhase]...)
+		}
+	}
+	newPod := Pod{
+		v1:           pod,
+		spec:         spec,
+		boundAt:      boundAt,
+		status:       status,
+		node:         node,
+		path:         path,
+		numPhase:     numPhase,
+		loadPhase:    newLoadPhase,
+		currentPhase: currentPhase,
+	}
+
+	return &newPod, nil
+}
+
+func loadPodFromFile(filePath string) (*v1.Pod, error) {
+	d, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		log.L.Errorf("cannot find file %s", filePath)
+		return nil, fmt.Errorf("cannot find file %s", filePath)
+	}
+
+	pod := v1.Pod{}
+
+	// err = yaml.Unmarshal(d, &pod)
+	// if err != nil {
+	// 	log.L.Errorf("cannot parse pod from file %s", filePath)
+	// 	return nil, fmt.Errorf("cannot parse pod from file %s", filePath)
+	// }
+
+	err = json.Unmarshal(d, &pod)
+	if err != nil {
+		log.L.Errorf("cannot parse pod from file %s", filePath)
+		return nil, fmt.Errorf("cannot parse pod from file %s", filePath)
+	}
+
+	// store filePath for loading more resource usages
+	pod.Annotations["path"] = filePath
+
+	return &pod, nil
+}
+
+func UpdatePod(pod *v1.Pod, boundAt clock.Clock, status Status, node string, currentPhase, loadPhase int, currentSpec spec) (*Pod, error) {
+	path := parsePath(pod)
+
 	spec, numPhase, err := parseSpec(pod)
 	if err != nil {
 		return nil, err
 	}
 
-	path := parsePath(pod)
 	newLoadPhase := loadPhase + LOAD_PHASE_CACHE
 	if path != "" {
 		if newLoadPhase >= numPhase {
@@ -230,7 +302,7 @@ func (pod *Pod) loadPod() (*Pod, error) {
 	// store filePath for loading more resource usages
 	v1Pod.Annotations["path"] = pod.path
 
-	newPod, err := NewPod(&v1Pod, pod.boundAt, pod.status, pod.node, pod.currentPhase, pod.loadPhase, pod.spec)
+	newPod, err := UpdatePod(&v1Pod, pod.boundAt, pod.status, pod.node, pod.currentPhase, pod.loadPhase, pod.spec)
 
 	if err != nil {
 		log.L.Errorf("cannot load pod %v", pod.v1.Name)

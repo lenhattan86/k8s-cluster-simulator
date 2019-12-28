@@ -528,12 +528,12 @@ if plotQoS:
     Y_MAX = 0
     for i in range(methodsNum):
         nsp = NumSatifiesPods[i][data_range[0]:data_range[1]]        
-        np = NumPods[i][data_range[0]:data_range[1]]        
+        nps = NumPods[i][data_range[0]:data_range[1]]        
         violation = 0
         total = 0
         for j in range(len(nsp)):
-            total = total + np[j]
-            violation = violation + np[j] - nsp[j]
+            total = total + nps[j]
+            violation = violation + nps[j] - nsp[j]
         y = round(violation*100/total,1)
         Y_MAX = max(y, Y_MAX)
         rects = ax.bar(i - BAR_WIDTH/2, y,  BAR_WIDTH, color=colors[i])

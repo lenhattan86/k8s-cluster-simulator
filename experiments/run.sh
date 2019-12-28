@@ -11,8 +11,6 @@ WORST_FIT="worstfit"
 GENERIC="generic"
 
 oversub=2.15
-cpuPerNode=64
-memPerNode=128
 
 workloadSubsetFactor=1
 isDebug=true
@@ -28,6 +26,8 @@ isMultipleResource="true"
 
 if $isOfficial
 then
+    cpuPerNode=64
+    memPerNode=128
     nodeNum=3000
     totalPodNumber=25000000
     start="2019-01-01T00:00:00+09:00"
@@ -38,9 +38,11 @@ then
     tick=60
     metricsTick=60
 else
-    nodeNum=3
+    nodeNum=1
     totalPodNumber=40
     targetNum=40
+    cpuPerNode=16
+    memPerNode=16
     start="2019-01-01T00:00:00+09:00"
     end="2019-01-01T01:00:00+09:00"
     pathToTrace="/ssd/projects/google-trace-data/task-res"

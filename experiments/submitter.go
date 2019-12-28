@@ -203,6 +203,7 @@ func (s *mySubmitter) loadPod(filePath string) (*v1.Pod, error) {
 
 	// store filePath for loading more resource usages
 	pod.Annotations["path"] = filePath
+	pod.Annotations["simSpec"] = "" // remove simpSpec to reduce memory use.
 
 	return &pod, nil
 }
@@ -213,7 +214,7 @@ func (s *mySubmitter) newRandomPod(idx uint64, clock clock.Clock) *v1.Pod {
 
 		sec := int(genNormFloat64(meanSec/2, meanSec, meanSec*0.1+1, meanSec*10, s.myrand))
 		cpu := 1 + int(genNormFloat64(cpuStd, meanCpu, meanCpu*0.1, meanCpu*10, s.myrand))
-		mem := 0
+		mem := cpu
 		gpu := 0
 
 		simSpec += fmt.Sprintf(`
@@ -248,7 +249,7 @@ func (s *mySubmitter) newRandomPod(idx uint64, clock clock.Clock) *v1.Pod {
 					Resources: v1.ResourceRequirements{
 						Requests: v1.ResourceList{
 							"cpu":            resource.MustParse(fmt.Sprintf("%d", int(requestCpu))),
-							"memory":         resource.MustParse("0Gi"),
+							"memory":         resource.MustParse(fmt.Sprintf("%dGi", int(requestMem))),
 							"nvidia.com/gpu": resource.MustParse("0"),
 						},
 						Limits: v1.ResourceList{

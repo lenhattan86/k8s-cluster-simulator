@@ -113,7 +113,10 @@ func allocate(clock clock.Clock, pods []*pod.Pod, capacity, demand, request *nod
 
 				pRequest := nodeinfo.NewResource(currMetrics.ResourceRequest)
 				pUsage := nodeinfo.NewResource(currMetrics.ResourceUsage)
-				guarantee := min(C*pRequest.MilliCPU/R, pUsage.MilliCPU)
+				guarantee := int64(0)
+				if R > 0 {
+					guarantee = min(C*pRequest.MilliCPU/R, pUsage.MilliCPU)
+				}
 				c -= guarantee
 				d -= guarantee
 				pAllocation := nodeinfo.NewResource(currMetrics.ResourceAllocation)
@@ -172,7 +175,10 @@ func allocate(clock clock.Clock, pods []*pod.Pod, capacity, demand, request *nod
 
 				pRequest := nodeinfo.NewResource(currMetrics.ResourceRequest)
 				pUsage := nodeinfo.NewResource(currMetrics.ResourceUsage)
-				guarantee := min(C*pRequest.Memory/R, pUsage.Memory)
+				guarantee := int64(0)
+				if R > 0 {
+					guarantee = min(C*pRequest.Memory/R, pUsage.Memory)
+				}
 				c -= guarantee
 				d -= guarantee
 				pAllocation := nodeinfo.NewResource(currMetrics.ResourceAllocation)
