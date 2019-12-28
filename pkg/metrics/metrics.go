@@ -16,7 +16,6 @@ package metrics
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/clock"
@@ -189,7 +188,6 @@ func allocate(clock clock.Clock, runingPodKeys []string, capacity, demand, reque
 				pAllocation := nodeinfo.NewResource(currMetrics.ResourceAllocation)
 				extra := max(pUsage.Memory-pAllocation.Memory, 0)
 				extra = min(int64(float64(C)/float64(D)*float64(extra)), extra)
-				fmt.Printf("extra: %v, pUsage.Memory: %v pAllocation.Memory: %v, C: %v, D: %v \n", extra, pUsage.Memory, pAllocation.Memory, C, D)
 				pAllocation.Memory += extra
 				currMetrics.ResourceAllocation = pAllocation.ResourceList()
 

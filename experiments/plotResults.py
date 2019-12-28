@@ -203,7 +203,9 @@ def formatMemQuatity(str):
     if(scaleStr == "m"):
         val = val/(1000*1000)
     elif (scaleStr == "Mi"):
-        val = val/(1024*1024)
+        val = val/(1024)
+    elif (scaleStr == "Ki"):
+        val = val/(1024*1024)    
     elif (scaleStr == "Gi"):
         va = val
     elif (scaleStr == ""): # byte
