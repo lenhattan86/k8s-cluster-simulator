@@ -10,7 +10,7 @@ ONE_SHOT="oneshot"
 WORST_FIT="worstfit"
 GENERIC="generic"
 
-oversub=2.2
+oversub=2
 
 workloadSubsetFactor=1
 isDebug=true
@@ -28,10 +28,10 @@ if $isOfficial
 then
     cpuPerNode=64
     memPerNode=128
-    nodeNum=3000
+    nodeNum=4000
     totalPodNumber=25000000
     start="2019-01-01T00:00:00+09:00"
-    end="2019-01-02T06:00:00+09:00"
+    end="2019-01-01T05:00:00+09:00"
     pathToTrace="/home/cc/google-data/tasks"
     pathToWorkload="/home/cc/google-data/workload"
     log_path="/home/cc/google-data/log"
