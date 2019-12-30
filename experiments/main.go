@@ -76,10 +76,10 @@ var (
 	// schedulerName       = "proposed"
 	globalOverSubFactor = 4.0
 
-	meanSec              = 10.0
+	meanSec              = 2.0
 	meanCpu              = 4.0
 	cpuStd               = 3.0
-	phasNum              = 10
+	phasNum              = 1000
 	requestCpu           = 8.0
 	requestMem           = 0.001
 	startClockStr        = "2019-01-01T00:00:00+09:00"

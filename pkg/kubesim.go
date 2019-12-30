@@ -215,8 +215,9 @@ func (k *KubeSim) Run(ctx context.Context) error {
 			} else {
 				scheduler.TimingMap["metrics.BuildMetrics"] += lapse.Microseconds()
 			}
-
-			// PrintMemUsage()
+			// run GC manually
+			runtime.GC()
+			PrintMemUsage()
 			scheduler.GlobalMetrics = met
 			scheduler.NodeMetricsMap = scheduler.Estimate(k.nodeNames)
 			scheduler.NodeMetricsCache = scheduler.NodeMetricsMap

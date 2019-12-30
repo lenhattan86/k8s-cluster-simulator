@@ -18,12 +18,13 @@ go get github.com/golang/protobuf/proto; \
 go get github.com/gogo/protobuf/proto
 
 ## setup python, pip and its library.
+sudo apt-get -y install python-numpy; \
+sudo apt-get -y install python-pandas; \
 sudo apt install -y python-matplotlib; \
 sudo apt install -y python3-matplotlib; \
-sudo apt-get -y install python-pandas; \
 sudo apt-get -y install python3-pandas; \
-sudo apt-get -y install python-numpy; \
-sudo apt-get -y install python3-numpy
+sudo apt-get -y install python3-numpy; \
+sudo apt-get -y install python3-scipy
 
 # sudo add-apt-repository ppa:jonathonf/python-3.6 -y
 # sudo apt-get update

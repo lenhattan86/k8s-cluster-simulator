@@ -38,9 +38,9 @@ then
     tick=60
     metricsTick=60
 else
-    nodeNum=2
-    totalPodNumber=40
-    targetNum=40
+    nodeNum=160
+    totalPodNumber=80
+    targetNum=80
     cpuPerNode=16
     memPerNode=16
     start="2019-01-01T00:00:00+09:00"
@@ -102,8 +102,8 @@ else
     SECONDS=0 
     echo "running simulation"
     runSim $PROPOSED false false &
-    runSim $WORST_FIT false false &
-    runSim $OVER_SUB false false  &
+    # runSim $WORST_FIT false false &
+    # runSim $OVER_SUB false false  &
     wait
     echo "simulation took $SECONDS seconds"
 fi

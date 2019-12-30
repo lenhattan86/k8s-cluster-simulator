@@ -19,6 +19,7 @@ STR_DISK = "Disk"
 STR_USAGE = "Usage"
 STR_MAX_USAGE = "Max usage"
 STR_MAX_USAGE_VS_REQUEST = "(Max usage)/request"
+STR_MEAN_USAGE_VS_REQUEST = "(Mean usage)/request"
 STR_USAGE_VS_REQ = "usage/request"
 STR_USAGE_VS_CAP = "usage/capacity"
 STR_USAGE_STD = "std of usage/mean"
@@ -26,6 +27,7 @@ STR_CORREFF = "correff"
 STR_TIME = "time"
 STR_TIME_LAG = "time lag (mins)"
 STR_TIME_MIN = "time (mins)"
+STR_TIME_DAY = "time (days)"
 STR_TIME_SEC = "time (secs)"
 
 STR_CPU_CORES = "CPU cores"
@@ -41,6 +43,9 @@ STR_QoS_Violation = "Qos violation (%)"
 # https://matplotlib.org/3.1.1/tutorials/colors/colors.html
 COLOR_CPU = "#4780BA"
 COLOR_MEM = "#EB9123"
+
+COLOR_REQUEST = "#4780BA"
+COLOR_USAGE = "#EB9123"
 
 COLOR_PROPOSED = '#4780BA'
 COLOR_WORST_FIT = '#EB9123'
