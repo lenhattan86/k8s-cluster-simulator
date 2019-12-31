@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/rand"
-	"runtime"
 	"time"
 
 	"github.com/containerd/containerd/log"
@@ -101,8 +100,6 @@ func (s *mySubmitter) loadWorkload(
 			return events, nil
 		}
 	}
-	// manually clean up memory.
-	runtime.GC()
 	return events, nil
 }
 

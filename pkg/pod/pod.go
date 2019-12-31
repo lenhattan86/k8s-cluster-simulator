@@ -273,9 +273,6 @@ func (pod *Pod) ResourceUsage(clock clock.Clock) v1.ResourceList {
 			}
 		}
 
-		log.L.Infof("%v, pod.spec's len: %v", pod.v1.Name, len(pod.spec))
-		log.L.Infof("%v, pod.v1.spec's len: %v", pod.v1.Name, len(pod.v1.Annotations["simSpec"]))
-
 		return phase.resourceUsage
 	}
 

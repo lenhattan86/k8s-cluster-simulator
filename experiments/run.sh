@@ -40,7 +40,7 @@ then
 else
     nodeNum=10
     totalPodNumber=10
-    targetNum=1
+    targetNum=10
     cpuPerNode=16
     memPerNode=16
     start="2019-01-01T00:00:00+09:00"
@@ -96,14 +96,14 @@ then
     echo "simulation took $SECONDS seconds"
 else
     SECONDS=0
-    runSim $GENERIC true false
+    # runSim $GENERIC true false
     echo "Generating workload took $SECONDS seconds"
 
     SECONDS=0 
     echo "running simulation"
     runSim $PROPOSED false false &
-    # runSim $WORST_FIT false false &
-    # runSim $OVER_SUB false false  &
+    runSim $WORST_FIT false false &
+    runSim $OVER_SUB false false  &
     wait
     echo "simulation took $SECONDS seconds"
 fi

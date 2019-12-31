@@ -129,3 +129,103 @@ cluster:
       nvidia.com/gpu: 0
       pods: 99999
 
+
+- metadata:
+    name: node-6
+    labels:
+      beta.kubernetes.io/os: simulated
+    annotations:
+      foo: bar
+  spec:
+    unschedulable: false
+    # taints:
+    # - key: k
+    #   value: v
+    #   effect: NoSchedule
+  status:
+    allocatable:
+      cpu: 16
+      memory: 16Gi
+      nvidia.com/gpu: 0
+      pods: 99999
+
+
+- metadata:
+    name: node-7
+    labels:
+      beta.kubernetes.io/os: simulated
+    annotations:
+      foo: bar
+  spec:
+    unschedulable: false
+    # taints:
+    # - key: k
+    #   value: v
+    #   effect: NoSchedule
+  status:
+    allocatable:
+      cpu: 16
+      memory: 16Gi
+      nvidia.com/gpu: 0
+      pods: 99999
+
+
+- metadata:
+    name: node-8
+    labels:
+      beta.kubernetes.io/os: simulated
+    annotations:
+      foo: bar
+  spec:
+    unschedulable: false
+    # taints:
+    # - key: k
+    #   value: v
+    #   effect: NoSchedule
+  status:
+    allocatable:
+      cpu: 16
+      memory: 16Gi
+      nvidia.com/gpu: 0
+      pods: 99999
+
+
+- metadata:
+    name: node-9
+    labels:
+      beta.kubernetes.io/os: simulated
+    annotations:
+      foo: bar
+  spec:
+    unschedulable: false
+    # taints:
+    # - key: k
+    #   value: v
+    #   effect: NoSchedule
+  status:
+    allocatable:
+      cpu: 16
+      memory: 16Gi
+      nvidia.com/gpu: 0
+      pods: 99999
+
+
+- metadata:
+    name: node-10
+    labels:
+      beta.kubernetes.io/os: simulated
+    annotations:
+      foo: bar
+  spec:
+    unschedulable: false
+    # taints:
+    # - key: k
+    #   value: v
+    #   effect: NoSchedule
+  status:
+    allocatable:
+      cpu: 16
+      memory: 16Gi
+      nvidia.com/gpu: 0
+      pods: 99999
+

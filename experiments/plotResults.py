@@ -260,7 +260,7 @@ for i in range(methodsNum):
     if (len(cpuRequests[i]) < data_range[1]):
         data_range[1] = len(cpuRequests[i])
     if (len(cpuRequests[i]) < data_range[0]):
-        data_range[0] = len(cpuRequests[i])
+        data_range[0] = 0
 
 ############# PLOTTING ##############
 if not os.path.exists(FIG_PATH):

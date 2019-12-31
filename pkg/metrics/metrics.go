@@ -103,6 +103,7 @@ func allocate(clock clock.Clock, runingPodKeys []string, capacity, demand, reque
 
 				pRequest := nodeinfo.NewResource(currMetrics.ResourceRequest)
 				pUsage := nodeinfo.NewResource(currMetrics.ResourceUsage)
+
 				guarantee := int64(0)
 
 				if R > 0 {
@@ -207,27 +208,31 @@ func allocate(clock clock.Clock, runingPodKeys []string, capacity, demand, reque
 		pAllocation := nodeinfo.NewResource(currMetrics.ResourceAllocation)
 		pRequest := nodeinfo.NewResource(currMetrics.ResourceRequest)
 
-		// if (pUsage.MilliCPU <= pAllocation.MilliCPU) &&
-		// 	(pUsage.Memory <= pAllocation.Memory) {
-		// 	// guaranteed
-		// 	qos += 1
-		// } else if pRequest.MilliCPU < pUsage.MilliCPU || pRequest.Memory < pUsage.Memory {
-		// 	// best effort
-		// 	c := float32(1)
-		// 	m := float32(1)
-		// 	if pUsage.MilliCPU != 0 {
-		// 		c = float32(pAllocation.MilliCPU) / float32(pUsage.MilliCPU)
-		// 	}
-		// 	if pUsage.Memory != 0 {
-		// 		m = float32(pAllocation.Memory) / float32(pUsage.Memory)
-		// 	}
-		// 	qos += minFloat32(c, m)
-		// }
+		binaryQoS := true
 
-		if (pUsage.MilliCPU <= pAllocation.MilliCPU || pAllocation.MilliCPU >= pRequest.MilliCPU) &&
-			(pUsage.Memory <= pAllocation.Memory || pAllocation.Memory >= pRequest.Memory) {
-			// guaranteed
-			qos += 1
+		if !binaryQoS {
+			if (pUsage.MilliCPU <= pAllocation.MilliCPU) &&
+				(pUsage.Memory <= pAllocation.Memory) {
+				// guaranteed
+				qos += 1
+			} else if pRequest.MilliCPU < pUsage.MilliCPU || pRequest.Memory < pUsage.Memory {
+				// best effort
+				c := float32(1)
+				m := float32(1)
+				if pUsage.MilliCPU != 0 {
+					c = float32(pAllocation.MilliCPU) / float32(pUsage.MilliCPU)
+				}
+				if pUsage.Memory != 0 {
+					m = float32(pAllocation.Memory) / float32(pUsage.Memory)
+				}
+				qos += minFloat32(c, m)
+			}
+		} else {
+			if (pUsage.MilliCPU <= pAllocation.MilliCPU || pAllocation.MilliCPU >= pRequest.MilliCPU) &&
+				(pUsage.Memory <= pAllocation.Memory || pAllocation.Memory >= pRequest.Memory) {
+				// guaranteed
+				qos += 1
+			}
 		}
 	}
 

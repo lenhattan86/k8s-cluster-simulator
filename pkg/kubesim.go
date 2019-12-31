@@ -191,9 +191,6 @@ func (k *KubeSim) Run(ctx context.Context) error {
 				return err
 			}
 
-			// run GC manually
-			runtime.GC()
-
 			start := time.Now()
 			if k.schedule() != nil {
 				return err
@@ -205,9 +202,6 @@ func (k *KubeSim) Run(ctx context.Context) error {
 			} else {
 				scheduler.TimingMap["k.schedule"] += lapse.Microseconds()
 			}
-
-			// run GC manually
-			runtime.GC()
 
 			// Rebuild metrics every tick for submitters to use.
 			start = time.Now()
@@ -223,7 +217,7 @@ func (k *KubeSim) Run(ctx context.Context) error {
 			}
 			// run GC manually
 			runtime.GC()
-			PrintMemUsage()
+			// PrintMemUsage()
 
 			scheduler.GlobalMetrics = met
 			scheduler.NodeMetricsCache = scheduler.Estimate(k.nodeNames)
