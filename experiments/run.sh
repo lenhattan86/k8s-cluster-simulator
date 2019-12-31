@@ -38,9 +38,9 @@ then
     tick=60
     metricsTick=60
 else
-    nodeNum=160
-    totalPodNumber=80
-    targetNum=80
+    nodeNum=10
+    totalPodNumber=10
+    targetNum=1
     cpuPerNode=16
     memPerNode=16
     start="2019-01-01T00:00:00+09:00"
@@ -96,7 +96,7 @@ then
     echo "simulation took $SECONDS seconds"
 else
     SECONDS=0
-    # runSim $GENERIC true false
+    runSim $GENERIC true false
     echo "Generating workload took $SECONDS seconds"
 
     SECONDS=0 

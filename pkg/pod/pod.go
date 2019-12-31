@@ -27,7 +27,7 @@ import (
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/util"
 )
 
-const LOAD_PHASE_CACHE = 10
+const LOAD_PHASE_CACHE = 100
 
 // Pod represents a simulated pod.
 type Pod struct {
@@ -104,15 +104,18 @@ func NewPod(pod *v1.Pod, boundAt clock.Clock, status Status, node string, curren
 	if err != nil {
 		return nil, err
 	}
-	spec, numPhase, err := parseSpec(podFromFile)
+	pSpec, numPhase, err := parseSpec(podFromFile)
 	if err != nil {
 		return nil, err
 	}
+	podFromFile = nil
 
 	// spec, numPhase, err := parseSpec(pod)
 	// if err != nil {
 	// 	return nil, err
 	// }
+
+	var newSpec spec
 
 	newLoadPhase := loadPhase + LOAD_PHASE_CACHE
 	if path != "" {
@@ -121,14 +124,15 @@ func NewPod(pod *v1.Pod, boundAt clock.Clock, status Status, node string, curren
 			path = ""
 		}
 		if currentSpec == nil {
-			spec = spec[:newLoadPhase]
+			newSpec = pSpec[:newLoadPhase]
 		} else {
-			spec = append(currentSpec, spec[loadPhase:newLoadPhase]...)
+			newSpec = append(currentSpec, pSpec[loadPhase:newLoadPhase]...)
 		}
 	}
+	pSpec = nil
 	newPod := Pod{
 		v1:           pod,
-		spec:         spec,
+		spec:         newSpec,
 		boundAt:      boundAt,
 		status:       status,
 		node:         node,
@@ -168,29 +172,22 @@ func loadPodFromFile(filePath string) (*v1.Pod, error) {
 	return &pod, nil
 }
 
-func UpdatePod(pod *v1.Pod, boundAt clock.Clock, status Status, node string, currentPhase, loadPhase int, currentSpec spec) (*Pod, error) {
-	path := parsePath(pod)
-
-	spec, numPhase, err := parseSpec(pod)
-	if err != nil {
-		return nil, err
+func UpdatePod(pod *v1.Pod, boundAt clock.Clock, status Status, node string, currentPhase, loadPhase int, numPhase int, currentSpec spec, pSpec spec, path string) (*Pod, error) {
+	newLoadPhase := loadPhase + LOAD_PHASE_CACHE
+	if newLoadPhase >= numPhase {
+		newLoadPhase = numPhase
+		path = ""
 	}
 
-	newLoadPhase := loadPhase + LOAD_PHASE_CACHE
-	if path != "" {
-		if newLoadPhase >= numPhase {
-			newLoadPhase = numPhase
-			path = ""
-		}
-		if currentSpec == nil {
-			spec = spec[:newLoadPhase]
-		} else {
-			spec = append(currentSpec, spec[loadPhase:newLoadPhase]...)
-		}
+	var newSpec spec
+	if currentSpec == nil {
+		newSpec = pSpec[:newLoadPhase]
+	} else {
+		newSpec = append(currentSpec, pSpec[loadPhase:newLoadPhase]...)
 	}
 	newPod := Pod{
 		v1:           pod,
-		spec:         spec,
+		spec:         newSpec,
 		boundAt:      boundAt,
 		status:       status,
 		node:         node,
@@ -276,6 +273,9 @@ func (pod *Pod) ResourceUsage(clock clock.Clock) v1.ResourceList {
 			}
 		}
 
+		log.L.Infof("%v, pod.spec's len: %v", pod.v1.Name, len(pod.spec))
+		log.L.Infof("%v, pod.v1.spec's len: %v", pod.v1.Name, len(pod.v1.Annotations["simSpec"]))
+
 		return phase.resourceUsage
 	}
 
@@ -300,10 +300,13 @@ func (pod *Pod) loadPod() (*Pod, error) {
 		return nil, fmt.Errorf("cannot parse pod from file %s", pod.path)
 	}
 	// store filePath for loading more resource usages
-	v1Pod.Annotations["path"] = pod.path
-
-	newPod, err := UpdatePod(&v1Pod, pod.boundAt, pod.status, pod.node, pod.currentPhase, pod.loadPhase, pod.spec)
-
+	spec, numPhase, err := parseSpec(&v1Pod)
+	if err != nil {
+		return nil, err
+	}
+	v1Pod.Annotations["simSpec"] = "" // reduce memory use.
+	newPod, err := UpdatePod(&v1Pod, pod.boundAt, pod.status, pod.node, pod.currentPhase, pod.loadPhase, numPhase, pod.spec, spec, pod.path)
+	spec = nil
 	if err != nil {
 		log.L.Errorf("cannot load pod %v", pod.v1.Name)
 		return nil, fmt.Errorf("cannot load pod %v", pod.v1.Name)

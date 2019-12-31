@@ -27,7 +27,6 @@ import (
 
 var GlobalMetrics metrics.Metrics
 var NodeResource metrics.Metrics
-var NodeMetricsMap = make(map[string]*NodeMetrics)
 var NodeMetricsCache = make(map[string]*NodeMetrics)
 var TimingMap = make(map[string]int64)
 
@@ -77,19 +76,6 @@ func (d *DeleteEvent) IsSchedulerEvent() bool { return true }
 type NodeMetrics struct {
 	Usage       nodeinfo.Resource
 	Allocatable nodeinfo.Resource
-}
-
-// Monitor monitors metrics.
-func Monitor(nodeInfoMap map[string]*nodeinfo.NodeInfo) map[string]*NodeMetrics {
-	nodeMetricsMap := make(map[string]*NodeMetrics)
-	for nodeName := range nodeInfoMap {
-		nodeMetrics := &NodeMetrics{
-			Usage:       *nodeinfo.NewResource(GlobalMetrics[metrics.NodesMetricsKey].(map[string]node.Metrics)[nodeName].TotalResourceUsage),
-			Allocatable: *nodeinfo.NewResource(GlobalMetrics[metrics.NodesMetricsKey].(map[string]node.Metrics)[nodeName].Allocatable),
-		}
-		nodeMetricsMap[nodeName] = nodeMetrics
-	}
-	return nodeMetricsMap
 }
 
 func max(a, b float32) float32 {

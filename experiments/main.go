@@ -158,7 +158,7 @@ var rootCmd = &cobra.Command{
 		}
 		// 2. Prepare the set of podsubmit time: set<timestamp>
 
-		// 3. Register one or more pod submitters to KubeSim.
+		// 3. Register one or more pod s to KubeSim.
 		endClock, err := BuildClock(endClockStr, 0)
 		if err != nil {
 			log.L.Fatal(err)
