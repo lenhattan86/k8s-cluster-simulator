@@ -18,7 +18,7 @@ from data_utils import *
 tick = 1
 ## plot utilization: number of busy nodes.
 cap = 64
-data_range=[10, 300]
+data_range=[10, 1000000]
 target_qos = 0.99
 
 cpuStr = 'cpu'
