@@ -79,7 +79,7 @@ var (
 	meanSec              = 3.0
 	meanCpu              = 4.0
 	cpuStd               = 3.0
-	phasNum              = 1000
+	phasNum              = 1
 	requestCpu           = 8.0
 	requestMem           = 0.001
 	startClockStr        = "2019-01-01T00:00:00+09:00"
@@ -395,6 +395,12 @@ func buildScheduler() scheduler.Scheduler {
 			sched.AddPredicate("JobConfictPredicates", predicates.JobConfict)
 		}
 		// Prioritizer
+		sched.AddPrioritizer(priorities.PriorityConfig{
+			Name:   "AvoidTasksFromSameJob",
+			Map:    priorities.LeastTasksFromSameJobPriorityMap,
+			Reduce: nil,
+			Weight: 1,
+		})
 
 		return &sched
 	case OVER_SUB:

@@ -17,6 +17,8 @@ package main
 import (
 	"context"
 
+	"strings"
+
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/scheduler"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -85,6 +87,15 @@ func prioritizeLowUsageNode(args api.ExtenderArgs) api.HostPriorityList {
 		}
 	}
 	return priorities
+}
+
+func jobName(pod *v1.Pod) string {
+	strs := strings.Split(pod.Name, "-")
+	if len(strs) < 2 {
+		return pod.Name
+	}
+
+	return strs[1]
 }
 
 func filterFitResource(args api.ExtenderArgs) api.ExtenderFilterResult {

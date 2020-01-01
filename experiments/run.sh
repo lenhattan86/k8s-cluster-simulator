@@ -38,11 +38,11 @@ then
     tick=60
     metricsTick=60
 else
-    nodeNum=10
-    totalPodNumber=10
-    targetNum=10
-    cpuPerNode=16
-    memPerNode=16
+    nodeNum=2
+    totalPodNumber=3
+    targetNum=3
+    cpuPerNode=64
+    memPerNode=128
     start="2019-01-01T00:00:00+09:00"
     end="2019-01-01T01:00:00+09:00"
     pathToTrace="/ssd/projects/google-trace-data/task-res"
@@ -102,8 +102,8 @@ else
     SECONDS=0 
     echo "running simulation"
     runSim $PROPOSED false false &
-    # runSim $WORST_FIT false false &
-    # runSim $OVER_SUB false false  &
+    runSim $WORST_FIT false false &
+    runSim $OVER_SUB false false  &
     wait
     echo "simulation took $SECONDS seconds"
 fi
