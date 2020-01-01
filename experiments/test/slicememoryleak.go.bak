@@ -1,0 +1,41 @@
+package main
+
+import (
+	"fmt"
+	"runtime"
+)
+
+func main() {
+	// reset...
+	runtime.GC()
+	PrintMemUsage()
+
+	m := make(map[string][]int)
+	runtime.GC()
+	n := 10000
+	arr := make([]int, 0, n)
+	arr = append(arr, 0)
+	m["a"] = arr
+
+	b := make([]int, 0, 1)
+	b = append(b, arr[0])
+
+	runtime.GC()
+	PrintMemUsage()
+	m["a"] = b
+
+	runtime.GC()
+	PrintMemUsage()
+	fmt.Printf("%v", m["a"])
+}
+
+func PrintMemUsage() {
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	// For info on each, see: https://golang.org/pkg/runtime/#MemStats
+	fmt.Printf("Alloc = %v KiB \tTotalAlloc = %v KiB \tSys = %v KiB \tNumGC = %v \n", bToMb(m.Alloc), bToMb(m.TotalAlloc), bToMb(m.Sys), m.NumGC)
+}
+
+func bToMb(b uint64) uint64 {
+	return b / 1024
+}

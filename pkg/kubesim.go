@@ -217,7 +217,6 @@ func (k *KubeSim) Run(ctx context.Context) error {
 			}
 			// run GC manually
 			runtime.GC()
-			// PrintMemUsage()
 
 			scheduler.GlobalMetrics = met
 			scheduler.NodeMetricsCache = scheduler.Estimate(k.nodeNames)

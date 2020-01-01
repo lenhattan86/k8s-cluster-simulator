@@ -115,21 +115,17 @@ func NewPod(pod *v1.Pod, boundAt clock.Clock, status Status, node string, curren
 	// 	return nil, err
 	// }
 
-	var newSpec spec
-
-	newLoadPhase := loadPhase + LOAD_PHASE_CACHE
-	if path != "" {
-		if newLoadPhase >= numPhase {
-			newLoadPhase = numPhase
-			path = ""
-		}
-		if currentSpec == nil {
-			newSpec = pSpec[:newLoadPhase]
-		} else {
-			newSpec = append(currentSpec, pSpec[loadPhase:newLoadPhase]...)
-		}
+	newLoadPhase := LOAD_PHASE_CACHE
+	if newLoadPhase >= numPhase {
+		newLoadPhase = numPhase
+		path = ""
+	}
+	newSpec := make(spec, 0, newLoadPhase)
+	for i := 0; i < newLoadPhase; i++ {
+		newSpec = append(newSpec, pSpec[i])
 	}
 	pSpec = nil
+
 	newPod := Pod{
 		v1:           pod,
 		spec:         newSpec,
@@ -173,6 +169,7 @@ func loadPodFromFile(filePath string) (*v1.Pod, error) {
 }
 
 func UpdatePod(pod *v1.Pod, boundAt clock.Clock, status Status, node string, currentPhase, loadPhase int, numPhase int, currentSpec spec, pSpec spec, path string) (*Pod, error) {
+
 	newLoadPhase := loadPhase + LOAD_PHASE_CACHE
 	if newLoadPhase >= numPhase {
 		newLoadPhase = numPhase
@@ -180,11 +177,22 @@ func UpdatePod(pod *v1.Pod, boundAt clock.Clock, status Status, node string, cur
 	}
 
 	var newSpec spec
+
 	if currentSpec == nil {
-		newSpec = pSpec[:newLoadPhase]
+		more := make(spec, newLoadPhase)
+		for i := 0; i < newLoadPhase; i++ {
+			newSpec = append(more, pSpec[i])
+		}
+		newSpec = more
 	} else {
-		newSpec = append(currentSpec, pSpec[loadPhase:newLoadPhase]...)
+		more := make(spec, newLoadPhase-loadPhase)
+		for i := loadPhase; i < newLoadPhase; i++ {
+			more = append(more, pSpec[i])
+		}
+		newSpec = append(currentSpec, more...)
 	}
+	pSpec = nil
+
 	newPod := Pod{
 		v1:           pod,
 		spec:         newSpec,

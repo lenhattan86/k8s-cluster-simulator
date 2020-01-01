@@ -1,0 +1,46 @@
+package main
+
+import (
+	"fmt"
+	"runtime"
+)
+
+type Pod struct {
+	Name        string
+	Annotations map[string]string
+}
+
+func main() {
+	// reset...
+	runtime.GC()
+	PrintMemUsage()
+
+	m := make(map[string]string)
+	pod := &Pod{Name: "pod", Annotations: m}
+	runtime.GC()
+
+	str := "aaaaaaaaaaa"
+	for i := 0; i < 10; i++ {
+		str += str
+	}
+	pod.Annotations["a"] = str
+
+	runtime.GC()
+	PrintMemUsage()
+	pod.Annotations["a"] = ""
+
+	runtime.GC()
+	PrintMemUsage()
+	fmt.Printf("%v", pod.Name)
+}
+
+func PrintMemUsage() {
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	// For info on each, see: https://golang.org/pkg/runtime/#MemStats
+	fmt.Printf("Alloc = %v KiB \tTotalAlloc = %v KiB \tSys = %v KiB \tNumGC = %v \n", bToMb(m.Alloc), bToMb(m.TotalAlloc), bToMb(m.Sys), m.NumGC)
+}
+
+func bToMb(b uint64) uint64 {
+	return b / 1024
+}

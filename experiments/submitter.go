@@ -202,7 +202,7 @@ func (s *mySubmitter) loadPod(filePath string) (*v1.Pod, error) {
 
 	// store filePath for loading more resource usages
 	pod.Annotations["path"] = filePath
-	pod.Annotations["simSpec"] = "" // remove simpSpec to reduce memory use.
+	pod.Annotations["simSpec"] = "" // remove simSpec to reduce memory use.
 
 	return &pod, nil
 }
