@@ -89,6 +89,8 @@ func max(a, b float32) float32 {
 
 // Estimate predict resource usage
 var updatePenaltyRule = 0 // 0: fix, others is dynamic
+var penaltyUpdated = false
+
 func Estimate(nodeNames []string) map[string]*NodeMetrics {
 	if updatePenaltyRule == 0 {
 		//do nothing
@@ -97,11 +99,16 @@ func Estimate(nodeNames []string) map[string]*NodeMetrics {
 		if GlobalMetrics[metrics.QueueMetricsKey].(queue.Metrics).PendingPodsNum > 0 {
 			prevQoS := GlobalMetrics[metrics.QueueMetricsKey].(queue.Metrics).QualityOfService
 			if prevQoS < TargetQoS {
-				MinPenalty = PredictionPenalty
-				PredictionPenalty = MaxPenalty / 2
-				MaxPenalty = (MaxPenalty + MinPenalty) / 2
+				tmp := MaxPenalty
+				if penaltyUpdated {
+					MinPenalty = PredictionPenalty
+					MaxPenalty = (MaxPenalty + MinPenalty) / 2
+					penaltyUpdated = false
+				}
+				PredictionPenalty = tmp
 			} else if prevQoS > TargetQoS {
 				PredictionPenalty = max(PredictionPenalty*PenaltyUpdate, MinPenalty)
+				penaltyUpdated = true
 			}
 		}
 	} else if updatePenaltyRule == 2 {
@@ -109,10 +116,14 @@ func Estimate(nodeNames []string) map[string]*NodeMetrics {
 		if GlobalMetrics[metrics.QueueMetricsKey].(queue.Metrics).PendingPodsNum > 0 {
 			prevQoS := GlobalMetrics[metrics.QueueMetricsKey].(queue.Metrics).QualityOfService
 			if prevQoS < TargetQoS {
-				MinPenalty = PredictionPenalty
+				if penaltyUpdated {
+					MinPenalty = PredictionPenalty
+					penaltyUpdated = false
+				}
 				PredictionPenalty = MaxPenalty
 			} else if prevQoS > TargetQoS {
 				PredictionPenalty = max(PredictionPenalty*PenaltyUpdate, MinPenalty)
+				penaltyUpdated = true
 			}
 		}
 	} else if updatePenaltyRule == 3 {
