@@ -147,11 +147,12 @@ var rootCmd = &cobra.Command{
 		ctx := newInterruptableContext()
 
 		// 1. Create a KubeSim with a pod queue and a scheduler.
-		queue := queue.NewPriorityQueue(queueClass)
 		sched := buildScheduler() // see below
 		if sched == nil {
 			return
 		}
+		queue := queue.NewPriorityQueue(queueClass)
+
 		kubesim := kubesim.NewKubeSimFromConfigPathOrDie(configPath, queue, sched)
 		nodes, _ := kubesim.List()
 		for _, node := range nodes {
