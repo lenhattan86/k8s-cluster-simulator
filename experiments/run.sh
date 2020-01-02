@@ -21,7 +21,7 @@ penaltyTimeout=10
 predictionPenalty=1.1
 targetQoS=0.99
 penaltyUpdate=0.99
-isDistributeTasks="false"
+isDistributeTasks="true"
 isMultipleResource="true"
 
 if $isOfficial
@@ -31,7 +31,7 @@ then
     nodeNum=4000
     totalPodNumber=25000000
     start="2019-01-01T00:00:00+09:00"
-    end="2019-01-01T05:00:00+09:00"
+    end="2019-01-01T15:00:00+09:00"
     pathToTrace="/home/cc/google-data/tasks"
     pathToWorkload="/home/cc/google-data/workload"
     log_path="/home/cc/google-data/log"

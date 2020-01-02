@@ -395,15 +395,14 @@ func buildScheduler() scheduler.Scheduler {
 		// 2. Register plugin(s)
 		// Predicate
 		if isDistributedTasks {
-			sched.AddPredicate("JobConfictPredicates", predicates.JobConfict)
+			// Prioritizer
+			sched.AddPrioritizer(priorities.PriorityConfig{
+				Name:   "AvoidTasksFromSameJob",
+				Map:    priorities.LeastTasksFromSameJobPriorityMap,
+				Reduce: nil,
+				Weight: 1,
+			})
 		}
-		// Prioritizer
-		sched.AddPrioritizer(priorities.PriorityConfig{
-			Name:   "AvoidTasksFromSameJob",
-			Map:    priorities.LeastTasksFromSameJobPriorityMap,
-			Reduce: nil,
-			Weight: 1,
-		})
 
 		return &sched
 	case OVER_SUB:
@@ -414,9 +413,9 @@ func buildScheduler() scheduler.Scheduler {
 		// 2. Register plugin(s)
 		// Predicate
 		sched.AddPredicate("PodFitsResourcesOverSub", predicates.PodFitsResourcesOverSub)
-		if isDistributedTasks {
-			sched.AddPredicate("JobConfictPredicates", predicates.JobConfict)
-		}
+		// if isDistributedTasks {
+		// 	sched.AddPredicate("JobConfictPredicates", predicates.JobConfict)
+		// }
 		// Prioritizer
 		sched.AddPrioritizer(priorities.PriorityConfig{
 			Name: "LeastRequested",
@@ -446,9 +445,9 @@ func buildScheduler() scheduler.Scheduler {
 		// 2. Register plugin(s)
 		// Predicate
 		sched.AddPredicate("PodFitsResources", predicates.PodFitsResources)
-		if isDistributedTasks {
-			sched.AddPredicate("JobConfictPredicates", predicates.JobConfict)
-		}
+		// if isDistributedTasks {
+		// 	sched.AddPredicate("JobConfictPredicates", predicates.JobConfict)
+		// }
 		// Prioritizer
 		sched.AddPrioritizer(priorities.PriorityConfig{
 			Name:   "MostRequested",
@@ -466,9 +465,9 @@ func buildScheduler() scheduler.Scheduler {
 		// 2. Register plugin(s)
 		// Predicate
 		sched.AddPredicate("PodFitsResources", predicates.PodFitsResources)
-		if isDistributedTasks {
-			sched.AddPredicate("JobConfictPredicates", predicates.JobConfict)
-		}
+		// if isDistributedTasks {
+		// 	sched.AddPredicate("JobConfictPredicates", predicates.JobConfict)
+		// }
 		// Prioritizer
 		sched.AddPrioritizer(priorities.PriorityConfig{
 			Name:   "LeastRequested",
@@ -496,9 +495,9 @@ func buildScheduler() scheduler.Scheduler {
 		// 2. Register plugin(s)
 		// Predicate
 		sched.AddPredicate("GeneralPredicates", predicates.GeneralPredicates)
-		if isDistributedTasks {
-			sched.AddPredicate("JobConfictPredicates", predicates.JobConfict)
-		}
+		// if isDistributedTasks {
+		// 	sched.AddPredicate("JobConfictPredicates", predicates.JobConfict)
+		// }
 		// Prioritizer
 		sched.AddPrioritizer(priorities.PriorityConfig{
 			Name:   "BalancedResourceAllocation",
