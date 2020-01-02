@@ -139,14 +139,18 @@ func Estimate(nodeNames []string) map[string]*NodeMetrics {
 		}
 	} else if updatePenaltyRule == 4 {
 		MinPenalty = 1.1
-		PenaltyUpdate = 0.95
+		PenaltyUpdate = 0.99
 		// update max & min so Prediction penalty will converge...
 		if GlobalMetrics[metrics.QueueMetricsKey].(queue.Metrics).PendingPodsNum > 0 {
 			prevQoS := GlobalMetrics[metrics.QueueMetricsKey].(queue.Metrics).QualityOfService
 			if prevQoS < TargetQoS {
-				PredictionPenalty += (PredictionPenalty - 1.0) / 2
+				if penaltyUpdated {
+					PredictionPenalty += (PredictionPenalty - 1.0)
+					penaltyUpdated = false
+				}
 			} else if prevQoS > TargetQoS {
 				PredictionPenalty = max(PredictionPenalty*PenaltyUpdate, MinPenalty)
+				penaltyUpdated = true
 			}
 		}
 	}
