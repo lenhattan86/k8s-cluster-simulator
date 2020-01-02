@@ -21,10 +21,10 @@ metricsTick: 1
 metricsLogger:
 - dest: ./log/kubesim_oversub.log
   formatter: JSON
-- dest: ./log/kubesim-hr-oversub.log
-  formatter: humanReadable
-- dest: stdout
-  formatter: table
+# - dest: ./log/kubesim-hr-oversub.log
+#   formatter: humanReadable
+# - dest: stdout
+#   formatter: table
 
 # Write configuration of each node.
 cluster:

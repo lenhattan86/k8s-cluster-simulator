@@ -37,10 +37,11 @@ type PriorityQueue struct {
 type Compare = func(pod0, pod1 *v1.Pod) bool
 
 // NewPriorityQueue creates a new PriorityQueue with DefaultComparator.
-func NewPriorityQueue() *PriorityQueue {
-	// return NewPriorityQueueWithComparator(DefaultComparator)
-	// TanLe: increase utilization when scheduling.
-	return NewPriorityQueueWithComparator(ResourceRequestComparator)
+func NewPriorityQueue(class int) *PriorityQueue {
+	if class == 1 {
+		return NewPriorityQueueWithComparator(ResourceRequestComparator)
+	}
+	return NewPriorityQueueWithComparator(DefaultComparator)
 }
 
 // NewPriorityQueueWithComparator creates a new PriorityQueue with the given comparator.

@@ -27,7 +27,7 @@ import (
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/util"
 )
 
-const LOAD_PHASE_CACHE = 100
+const LOAD_PHASE_CACHE = 15
 
 // Pod represents a simulated pod.
 type Pod struct {

@@ -138,6 +138,7 @@ func init() {
 		&penaltyUpdate, "penalty-update", 1.0, "target qos")
 }
 
+var queueClass = 0
 var rootCmd = &cobra.Command{
 	Use:   "k8s-cluster-simulator",
 	Short: "k8s-cluster-simulator provides a virtual kubernetes cluster interface for evaluating your scheduler.",
@@ -146,7 +147,7 @@ var rootCmd = &cobra.Command{
 		ctx := newInterruptableContext()
 
 		// 1. Create a KubeSim with a pod queue and a scheduler.
-		queue := queue.NewPriorityQueue()
+		queue := queue.NewPriorityQueue(queueClass)
 		sched := buildScheduler() // see below
 		if sched == nil {
 			return
@@ -375,6 +376,7 @@ func buildScheduler() scheduler.Scheduler {
 
 	// 	return &sched
 	case PROPOSED:
+		queueClass = 1
 		log.L.Infof("Scheduler: %s", PROPOSED)
 		globalOverSubFactor = 1.0
 		sched := scheduler.NewGenericScheduler(false)
@@ -404,6 +406,7 @@ func buildScheduler() scheduler.Scheduler {
 
 		return &sched
 	case OVER_SUB:
+		queueClass = 0
 		log.L.Infof("Scheduler: %s", OVER_SUB)
 		sched := scheduler.NewGenericScheduler(false)
 
@@ -424,6 +427,7 @@ func buildScheduler() scheduler.Scheduler {
 
 		return &sched
 	case BEST_FIT:
+		queueClass = 0
 		log.L.Infof("Scheduler: %s", BEST_FIT)
 		globalOverSubFactor = 1.0
 		sched := scheduler.NewGenericScheduler(false)
@@ -454,6 +458,7 @@ func buildScheduler() scheduler.Scheduler {
 
 		return &sched
 	case WOSRT_FIT:
+		queueClass = 0
 		log.L.Infof("Scheduler: %s", WOSRT_FIT)
 		globalOverSubFactor = 1.0
 		sched := scheduler.NewGenericScheduler(false)
