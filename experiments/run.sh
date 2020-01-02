@@ -18,7 +18,7 @@ workloadSubfolderCap=100000
 startTrace="000000000"
 targetNum=0
 penaltyTimeout=10
-predictionPenalty=2
+predictionPenalty=1.1
 targetQoS=0.99
 penaltyUpdate=0.99
 isDistributeTasks="false"
@@ -39,8 +39,8 @@ then
     metricsTick=60
 else
     nodeNum=2
-    totalPodNumber=3
-    targetNum=3
+    totalPodNumber=100
+    targetNum=100
     cpuPerNode=64
     memPerNode=128
     start="2019-01-01T00:00:00+09:00"
@@ -96,7 +96,7 @@ then
     echo "simulation took $SECONDS seconds"
 else
     SECONDS=0
-    # runSim $GENERIC true false
+    runSim $GENERIC true false
     echo "Generating workload took $SECONDS seconds"
 
     SECONDS=0 

@@ -33,7 +33,7 @@ var TimingMap = make(map[string]int64)
 var PenaltyMap = make(map[string]float32)
 var PenaltyTiming = make(map[string]int)
 var PredictionPenalty float32
-var MaxPenalty = float32(2.0)
+var MaxPenalty = float32(2)
 var MinPenalty = float32(1.0)
 var PenaltyUpdate float32
 var StopUpdate = false
@@ -88,7 +88,7 @@ func max(a, b float32) float32 {
 }
 
 // Estimate predict resource usage
-var updatePenaltyRule = 1 // 0: fix, others is dynamic
+var updatePenaltyRule = 0 // 0: fix, others is dynamic
 func Estimate(nodeNames []string) map[string]*NodeMetrics {
 	if updatePenaltyRule == 0 {
 		//do nothing

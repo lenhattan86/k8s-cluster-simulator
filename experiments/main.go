@@ -76,7 +76,7 @@ var (
 	// schedulerName       = "proposed"
 	globalOverSubFactor = 4.0
 
-	meanSec              = 3.0
+	meanSec              = 10.0
 	meanCpu              = 4.0
 	cpuStd               = 3.0
 	phasNum              = 1
