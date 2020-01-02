@@ -88,7 +88,7 @@ func max(a, b float32) float32 {
 }
 
 // Estimate predict resource usage
-var updatePenaltyRule = 0 // 0: fix, others is dynamic
+var updatePenaltyRule = 1 // 0: fix, others is dynamic
 var penaltyUpdated = false
 
 func Estimate(nodeNames []string) map[string]*NodeMetrics {
