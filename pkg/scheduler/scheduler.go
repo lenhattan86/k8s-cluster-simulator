@@ -40,6 +40,7 @@ var StopUpdate = false
 var TargetQoS float32
 var PenaltyTimeout int
 var PrevPredictions map[string]*NodeMetrics
+var prevQoS = float32(1.0)
 
 // Scheduler defines the lowest-level scheduler interface.
 type Scheduler interface {
@@ -97,14 +98,14 @@ func Estimate(nodeNames []string) map[string]*NodeMetrics {
 	} else if updatePenaltyRule == 1 {
 		// update min so prediction penalty will converge...
 		if GlobalMetrics[metrics.QueueMetricsKey].(queue.Metrics).PendingPodsNum > 0 {
-			prevQoS := GlobalMetrics[metrics.QueueMetricsKey].(queue.Metrics).QualityOfService
-			if prevQoS < TargetQoS {
+			qos := GlobalMetrics[metrics.QueueMetricsKey].(queue.Metrics).QualityOfService
+			if qos < TargetQoS {
 				if penaltyUpdated {
 					MinPenalty = PredictionPenalty
 					penaltyUpdated = false
 				}
 				PredictionPenalty = MaxPenalty
-			} else if prevQoS > TargetQoS {
+			} else if qos > TargetQoS {
 				PredictionPenalty = max(PredictionPenalty*PenaltyUpdate, MinPenalty)
 				penaltyUpdated = true
 			}
@@ -112,10 +113,10 @@ func Estimate(nodeNames []string) map[string]*NodeMetrics {
 	} else if updatePenaltyRule == 2 {
 		// go from max to min.
 		if GlobalMetrics[metrics.QueueMetricsKey].(queue.Metrics).PendingPodsNum > 0 {
-			prevQoS := GlobalMetrics[metrics.QueueMetricsKey].(queue.Metrics).QualityOfService
-			if prevQoS < TargetQoS {
+			qos := GlobalMetrics[metrics.QueueMetricsKey].(queue.Metrics).QualityOfService
+			if qos < TargetQoS {
 				PredictionPenalty = MaxPenalty
-			} else if prevQoS > TargetQoS {
+			} else if qos > TargetQoS {
 				PredictionPenalty = max(PredictionPenalty*PenaltyUpdate, MinPenalty)
 			}
 		}
@@ -123,8 +124,8 @@ func Estimate(nodeNames []string) map[string]*NodeMetrics {
 		// we can start at 1.1
 		// update max & min so Prediction penalty will converge...
 		if GlobalMetrics[metrics.QueueMetricsKey].(queue.Metrics).PendingPodsNum > 0 {
-			prevQoS := GlobalMetrics[metrics.QueueMetricsKey].(queue.Metrics).QualityOfService
-			if prevQoS < TargetQoS {
+			qos := GlobalMetrics[metrics.QueueMetricsKey].(queue.Metrics).QualityOfService
+			if qos < TargetQoS {
 				tmp := MaxPenalty
 				if penaltyUpdated {
 					MinPenalty = PredictionPenalty
@@ -132,26 +133,43 @@ func Estimate(nodeNames []string) map[string]*NodeMetrics {
 					penaltyUpdated = false
 				}
 				PredictionPenalty = tmp
-			} else if prevQoS > TargetQoS {
+			} else if qos > TargetQoS {
 				PredictionPenalty = max(PredictionPenalty*PenaltyUpdate, MinPenalty)
 				penaltyUpdated = true
 			}
 		}
-	} else if updatePenaltyRule == 4 {
+	} else if updatePenaltyRule == 4 { // good.
 		MinPenalty = 1.1
 		PenaltyUpdate = 0.99
 		// update max & min so Prediction penalty will converge...
 		if GlobalMetrics[metrics.QueueMetricsKey].(queue.Metrics).PendingPodsNum > 0 {
-			prevQoS := GlobalMetrics[metrics.QueueMetricsKey].(queue.Metrics).QualityOfService
-			if prevQoS < TargetQoS {
+			qos := GlobalMetrics[metrics.QueueMetricsKey].(queue.Metrics).QualityOfService
+			if qos < TargetQoS {
 				if penaltyUpdated {
 					PredictionPenalty += (PredictionPenalty - 1.0)
 					penaltyUpdated = false
 				}
-			} else if prevQoS > TargetQoS {
+			} else if qos > TargetQoS {
 				PredictionPenalty = max(PredictionPenalty*PenaltyUpdate, MinPenalty)
 				penaltyUpdated = true
 			}
+		}
+	} else if updatePenaltyRule == 5 {
+		MinPenalty = 1.1
+		PenaltyUpdate = 0.99
+		// update max & min so Prediction penalty will converge...
+		if GlobalMetrics[metrics.QueueMetricsKey].(queue.Metrics).PendingPodsNum > 0 {
+			qos := GlobalMetrics[metrics.QueueMetricsKey].(queue.Metrics).QualityOfService
+			if qos < TargetQoS {
+				if penaltyUpdated || qos < (prevQoS*0.99) {
+					PredictionPenalty += (PredictionPenalty - 1.0)
+					penaltyUpdated = false
+				}
+			} else if qos > TargetQoS {
+				PredictionPenalty = max(PredictionPenalty*PenaltyUpdate, MinPenalty)
+				penaltyUpdated = true
+			}
+			prevQoS = qos
 		}
 	}
 
