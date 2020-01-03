@@ -152,8 +152,9 @@ var rootCmd = &cobra.Command{
 			return
 		}
 		queue := queue.NewPriorityQueue(queueClass)
+		endClock, err := BuildClock(endClockStr, 0)
 
-		kubesim := kubesim.NewKubeSimFromConfigPathOrDie(configPath, queue, sched)
+		kubesim := kubesim.NewKubeSimFromConfigPathOrDie(configPath, queue, sched, endClock)
 		nodes, _ := kubesim.List()
 		for _, node := range nodes {
 			predicates.NodesOverSubFactors[node.Name] = globalOverSubFactor
@@ -161,7 +162,7 @@ var rootCmd = &cobra.Command{
 		// 2. Prepare the set of podsubmit time: set<timestamp>
 
 		// 3. Register one or more pod s to KubeSim.
-		endClock, err := BuildClock(endClockStr, 0)
+
 		if err != nil {
 			log.L.Fatal(err)
 		}

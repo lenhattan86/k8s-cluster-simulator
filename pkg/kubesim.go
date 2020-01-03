@@ -57,13 +57,13 @@ type KubeSim struct {
 
 	metricsWriters []metrics.Writer
 	metricsTick    time.Duration
+	endClock       clock.Clock
 }
 
 // NewKubeSim creates a new KubeSim with the given config, queue, and scheduler.
 // Returns error if the configuration failed.
 func NewKubeSim(
-	conf *config.Config, queue queue.PodQueue, sched scheduler.Scheduler,
-) (*KubeSim, error) {
+	conf *config.Config, queue queue.PodQueue, sched scheduler.Scheduler, endClock clock.Clock) (*KubeSim, error) {
 
 	log.G(context.TODO()).Debugf("Config: %+v", *conf)
 
@@ -112,6 +112,7 @@ func NewKubeSim(
 
 		metricsTick:    time.Duration(metricsTick) * time.Second,
 		metricsWriters: metricsWriters,
+		endClock:       endClock,
 	}, nil
 }
 
@@ -119,25 +120,23 @@ func NewKubeSim(
 // extension), queue, and scheduler.
 // Returns error if the configuration failed.
 func NewKubeSimFromConfigPath(
-	confPath string, queue queue.PodQueue, sched scheduler.Scheduler,
-) (*KubeSim, error) {
+	confPath string, queue queue.PodQueue, sched scheduler.Scheduler, endClock clock.Clock) (*KubeSim, error) {
 
 	conf, err := readConfig(confPath)
 	if err != nil {
 		return nil, errors.Errorf("Error reading config: %s", err.Error())
 	}
 
-	return NewKubeSim(conf, queue, sched)
+	return NewKubeSim(conf, queue, sched, endClock)
 }
 
 // NewKubeSimFromConfigPathOrDie creates a new KubeSim with config from confPath (excluding file
 // extension), queue, and scheduler.
 // If an error occurs during the initialization, it panics and stops the execution.
 func NewKubeSimFromConfigPathOrDie(
-	confPath string, queue queue.PodQueue, sched scheduler.Scheduler,
-) *KubeSim {
+	confPath string, queue queue.PodQueue, sched scheduler.Scheduler, endClock clock.Clock) *KubeSim {
 
-	kubesim, err := NewKubeSimFromConfigPath(confPath, queue, sched)
+	kubesim, err := NewKubeSimFromConfigPath(confPath, queue, sched, endClock)
 	if err != nil {
 		log.L.Fatal(err)
 	}
@@ -165,8 +164,8 @@ func (k *KubeSim) Run(ctx context.Context) error {
 	submitterAddedEver := len(k.submitters) > 0
 	startKube := time.Now()
 	for {
-		if k.toTerminate(submitterAddedEver) {
-			log.L.Debug("Terminate KubeSim")
+		if k.toTerminate(submitterAddedEver) || (k.endClock.Before(k.clock)) {
+			log.L.Infof("Terminate KubeSim")
 			break
 		}
 		submitterAddedEver = submitterAddedEver || len(k.submitters) > 0

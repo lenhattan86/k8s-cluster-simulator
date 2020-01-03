@@ -575,7 +575,7 @@ if plotPredictionPenalty:
     
     plt.xlabel(STR_TIME_MIN)
     plt.ylabel(STR_Pred_Penalty)
-    # plt.ylim(0,3.1)
+    plt.ylim(0,np.amax(PredPenalties[proposed_idx])*1.1)
 
     fig.savefig(FIG_PATH+"/pred_penalty.pdf", bbox_inches='tight')
 
