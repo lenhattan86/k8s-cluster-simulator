@@ -571,15 +571,17 @@ if plotQoS:
     fig.savefig(FIG_PATH+"/qos_violation_pod.pdf", bbox_inches='tight')
 
 if plotPredictionPenalty:
+    Y_MAX = 1.5
     fig = plt.figure(figsize=FIG_ONE_COL)
     for i in range(methodsNum-proposed_idx):
         plt.plot(range(0,len(PredPenalties[proposed_idx+i])*tick,tick), PredPenalties[proposed_idx+i], color=colors[proposed_idx+i])
+        Y_MAX = max(np.amax(PredPenalties[proposed_idx+i]),Y_MAX)
     
     legends = methodNames[proposed_idx:]
     plt.legend(legends, loc='best')
     plt.xlabel(STR_TIME_MIN)
-    plt.ylabel(STR_Pred_Penalty)
-    # plt.ylim(0,np.amax(PredPenalties[proposed_idx])*1.1)
+    plt.ylabel(STR_Pred_Penalty)    
+    plt.ylim(0,Y_MAX*1.1)
 
     fig.savefig(FIG_PATH+"/pred_penalty.pdf", bbox_inches='tight')
 
