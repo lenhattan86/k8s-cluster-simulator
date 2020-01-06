@@ -42,7 +42,7 @@ var PenaltyTimeout int
 var PrevPredictions map[string]*NodeMetrics
 var prevQoS = float32(1.0)
 var KeepScheduling = true
-var KeepSchedulingTimeout = 10000
+var KeepSchedulingTimeout = 1000
 
 // Scheduler defines the lowest-level scheduler interface.
 type Scheduler interface {
@@ -160,19 +160,17 @@ func Estimate(nodeNames []string) map[string]*NodeMetrics {
 		MinPenalty = 1.1
 		PenaltyUpdate = 0.99
 		// update max & min so Prediction penalty will converge...
-		if GlobalMetrics[metrics.QueueMetricsKey].(queue.Metrics).PendingPodsNum > 0 {
-			qos := GlobalMetrics[metrics.QueueMetricsKey].(queue.Metrics).QualityOfService
-			if qos < TargetQoS {
-				if penaltyUpdated || qos < (prevQoS*0.99) {
-					PredictionPenalty += (PredictionPenalty - 1.0)
-					penaltyUpdated = false
-				}
-			} else if qos > TargetQoS {
-				PredictionPenalty = max(PredictionPenalty*PenaltyUpdate, MinPenalty)
-				penaltyUpdated = true
+		qos := GlobalMetrics[metrics.QueueMetricsKey].(queue.Metrics).QualityOfService
+		if qos < TargetQoS {
+			if penaltyUpdated || qos < (prevQoS*0.99) {
+				PredictionPenalty += (PredictionPenalty - 1.0)
+				penaltyUpdated = false
 			}
-			prevQoS = qos
+		} else if qos > TargetQoS {
+			PredictionPenalty = max(PredictionPenalty*PenaltyUpdate, MinPenalty)
+			penaltyUpdated = true
 		}
+		prevQoS = qos
 	}
 
 	nodeMetricsMap := make(map[string]*NodeMetrics)

@@ -19,7 +19,7 @@ metricsTick: 1
 # The metrics is formatted with the given formatter.
 # Optional (default: not writing metrics)
 metricsLogger:
-- dest: ./log/kubesim_proposed.log
+- dest: ./log/kubesim_proposed_largest.log
   formatter: JSON
 # - dest: ./log/kubesim-hr-proposed.log
 #   formatter: humanReadable

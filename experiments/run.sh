@@ -58,8 +58,9 @@ mkdir $pathToWorkload
 mkdir $log_path
 
 runSim(){
-    ./gen_config.sh $1 "." $nodeNum $cpuPerNode $memPerNode $tick $metricsTick "$start" $log_path
-    go run github.com/pfnet-research/k8s-cluster-simulator/experiments --config="./config/cluster_$1" \
+    log_file=$6
+    ./gen_config.sh $1 "." $nodeNum $cpuPerNode $memPerNode $tick $metricsTick "$start" $log_path $log_file
+    go run github.com/pfnet-research/k8s-cluster-simulator/experiments --config="./config/cluster_$log_file" \
     --workload="$pathToWorkload"  \
     --scheduler="$1" \
     --isgen=$2 \
@@ -83,7 +84,7 @@ runSim(){
     --load-phase-cache=$loadPhaseCache \
     --queue-class=$4 \
     --priority-type=$5 \
-    &> run_${6}.out
+    &> run_$log_file.out
 }
 
 if $isOfficial
@@ -95,9 +96,10 @@ then
 
     SECONDS=0 
     echo "running simulation"    
-    queueClass=1; priorityType=1; runSim $PROPOSED false false $queueClass $priorityType $PROPOSED & 
-    queueClass=1; priorityType=0; runSim $WORST_FIT false false $queueClass $priorityType $WORST_FIT &
-    queueClass=1; priorityType=0; runSim $OVER_SUB false false $queueClass $priorityType $OVER_SUB &    
+    queueClass=0; priorityType=0; runSim $PROPOSED false false $queueClass $priorityType ${PROPOSED}_list & 
+    queueClass=1; priorityType=1; runSim $PROPOSED false false $queueClass $priorityType ${PROPOSED}_largest & 
+    queueClass=0; priorityType=0; runSim $WORST_FIT false false $queueClass $priorityType $WORST_FIT &
+    queueClass=0; priorityType=0; runSim $OVER_SUB false false $queueClass $priorityType $OVER_SUB &      
     wait
     echo "simulation took $SECONDS seconds"
 else
@@ -108,7 +110,8 @@ else
 
     SECONDS=0 
     echo "running simulation"
-    queueClass=0; priorityType=0; runSim $PROPOSED false false $queueClass $priorityType $PROPOSED & 
+    queueClass=0; priorityType=0; runSim $PROPOSED false false $queueClass $priorityType ${PROPOSED}_list & 
+    queueClass=1; priorityType=1; runSim $PROPOSED false false $queueClass $priorityType ${PROPOSED}_largest & 
     queueClass=0; priorityType=0; runSim $WORST_FIT false false $queueClass $priorityType $WORST_FIT &
     queueClass=0; priorityType=0; runSim $OVER_SUB false false $queueClass $priorityType $OVER_SUB &    
     wait

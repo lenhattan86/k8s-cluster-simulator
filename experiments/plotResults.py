@@ -215,8 +215,9 @@ def formatMemQuatity(str):
     return val
 
 
-methods = ["worstfit","oversub", "proposed"]
-colors = [COLOR_WORST_FIT, COLOR_OVER_SUB, COLOR_PROPOSED]
+methods = ["worstfit", "oversub", "proposed_list", "proposed_largest"]
+methodNames = ["worstfit","oversub", "prop_list", "prop_largest"]
+colors = [COLOR_WORST_FIT, COLOR_OVER_SUB, COLOR_PROPOSED_1, COLOR_PROPOSED_2]
 proposed_idx = 2
 # methods = ["oneshot","worstfit"]
 methodsNum = len(methods)
@@ -276,7 +277,7 @@ if plotObj:
             max_len = len(maxCpuUsages[i])
     
     plt.plot(range(0,max_len*tick,tick), [cap] * max_len, color=COLOR_CAP)
-    legends = methods
+    legends = methodNames
     legends.append('capacity')
     plt.legend(legends, loc='best')
     plt.xlabel('time (minutes)')
@@ -331,7 +332,7 @@ if plotUtilization:
     autolabel(rects, ax)
     rects = ax.bar(x, memReqUtil,  width, label=STR_MEM, color=COLOR_MEM)
     autolabel(rects, ax)
-    labels = methods
+    labels = methodNames
     ax.set_ylabel('Request (%)')
     ax.set_xticks(x)
     ax.set_xticklabels(labels)
@@ -346,7 +347,7 @@ if plotUtilization:
     autolabel(rects, ax)
     rects = ax.bar(x, memDemandUtil,  width, label=STR_MEM, color=COLOR_MEM)
     autolabel(rects, ax)
-    labels = methods
+    labels = methodNames
     ax.set_ylabel('Demand (%)')
     ax.set_xticks(x)
     ax.set_xticklabels(labels)
@@ -361,7 +362,7 @@ if plotUtilization:
     autolabel(rects, ax)
     rects = ax.bar(x, memUsageUtil,  width, label=STR_MEM, color=COLOR_MEM)
     autolabel(rects, ax)
-    labels = methods
+    labels = methodNames
     ax.set_ylabel('Usage (%)')
     ax.set_xticks(x)
     ax.set_xticklabels(labels)
@@ -377,7 +378,7 @@ if plotUtilization:
         plt.plot(range(0,len(cpuRequests[i])*tick,tick), cpuRequests[i], color=colors[i])
 
     plt.plot(range(0,len(cpuAllocatables[0])*tick,tick), cpuAllocatables[0], color=COLOR_CAP)
-    legends = methods
+    legends = methodNames
     legends.append('capacity')
 
     plt.legend(legends, loc='best')
@@ -392,7 +393,7 @@ if plotUtilization:
         plt.plot(range(0,len(memRequests[i])*tick,tick), memRequests[i], color=colors[i])
 
     plt.plot(range(0,len(memAllocatables[0])*tick,tick), memAllocatables[0], color=COLOR_CAP)
-    legends = methods
+    legends = methodNames
     legends.append('capacity')
 
     plt.legend(legends, loc='best')
@@ -408,7 +409,7 @@ if plotUtilization:
         plt.plot(range(0,len(cpuUsages[i])*tick,tick), cpuUsages[i], color=colors[i])
     
     plt.plot(range(0,len(cpuAllocatables[0])*tick,tick), cpuAllocatables[0], color=COLOR_CAP)
-    legends = methods
+    legends = methodNames
     legends.append('capacity')
 
     plt.legend(legends, loc='best')
@@ -423,7 +424,7 @@ if plotUtilization:
         plt.plot(range(0,len(memUsages[i])*tick,tick), memUsages[i], color=colors[i])
     
     plt.plot(range(0,len(memAllocatables[0])*tick,tick), memAllocatables[0], color=COLOR_CAP)
-    legends = methods
+    legends = methodNames
     legends.append('capacity')
 
     plt.legend(legends, loc='best')
@@ -439,7 +440,7 @@ if plotUtilization:
         plt.plot(range(0,len(cpuAllocations[i])*tick,tick), cpuAllocations[i], color=colors[i])
     
     plt.plot(range(0,len(cpuAllocatables[0])*tick,tick), cpuAllocatables[0], color=COLOR_CAP)
-    legends = methods
+    legends = methodNames
     legends.append('capacity')
 
     plt.legend(legends, loc='best')
@@ -454,7 +455,7 @@ if plotUtilization:
         plt.plot(range(0,len(memAllocations[i])*tick,tick), memAllocations[i], color=colors[i])
     
     plt.plot(range(0,len(memAllocatables[0])*tick,tick), memAllocatables[0], color=COLOR_CAP)
-    legends = methods
+    legends = methodNames
     legends.append('capacity')
 
     plt.legend(legends, loc='best')
@@ -470,7 +471,7 @@ if plotOverload:
     for i in range(methodsNum):
         plt.plot(range(0,len(overloadNodes[i])*tick,tick), overloadNodes[i], color=colors[i])
 
-    plt.legend(methods, loc='best')
+    plt.legend(methodNames, loc='best')
     plt.xlabel(STR_TIME_MIN)
     plt.ylabel(STR_NODES)
     plt.suptitle("Overload")
@@ -484,7 +485,7 @@ if plotOverbook:
     for i in range(methodsNum):
         plt.plot(range(0,len(overbookNodes[i])*tick,tick), overbookNodes[i], color=colors[i])
     
-    legends = methods   
+    legends = methodNames   
     plt.legend(legends, loc='best')
     plt.xlabel(STR_TIME_MIN)
     plt.ylabel(STR_NODES)
@@ -499,7 +500,7 @@ if plotQoS:
         qos = QoSs[i][data_range[0]:data_range[1]]
         plt.plot(range(0,len(qos)*tick,tick), qos, color=colors[i])
     
-    legends = methods   
+    legends = methodNames   
     plt.legend(legends, loc='best')
     plt.xlabel(STR_TIME_MIN)
     plt.ylabel(STR_QoS)
@@ -514,7 +515,7 @@ if plotQoS:
         cdf = compute_cdf(numpy.array(qos))
         plt.plot(cdf.x, cdf.p, color=colors[i])
 
-    legends = methods   
+    legends = methodNames   
     plt.legend(legends, loc='best')
     plt.xlabel(STR_QoS)
     plt.ylabel(STR_CDF)
@@ -537,7 +538,7 @@ if plotQoS:
         rects = ax.bar(i - BAR_WIDTH/2, y,  BAR_WIDTH, color=colors[i])
         autolabel(rects, ax)
 
-    labels = methods
+    labels = methodNames
     ax.set_ylabel(STR_QoS_Violation)
     ax.set_xticks(x)
     ax.set_xticklabels(labels)
@@ -561,7 +562,7 @@ if plotQoS:
         rects = ax.bar(i - BAR_WIDTH/2, y,  BAR_WIDTH, color=colors[i])
         autolabel(rects, ax)
 
-    labels = methods
+    labels = methodNames
     ax.set_ylabel(STR_QoS_Violation)
     ax.set_xticks(x)
     ax.set_xticklabels(labels)
@@ -571,11 +572,14 @@ if plotQoS:
 
 if plotPredictionPenalty:
     fig = plt.figure(figsize=FIG_ONE_COL)
-    plt.plot(range(0,len(PredPenalties[proposed_idx])*tick,tick), PredPenalties[proposed_idx])
+    for i in range(methodsNum-proposed_idx):
+        plt.plot(range(0,len(PredPenalties[proposed_idx+i])*tick,tick), PredPenalties[proposed_idx+i], color=colors[proposed_idx+i])
     
+    legends = methodNames[proposed_idx:]
+    plt.legend(legends, loc='best')
     plt.xlabel(STR_TIME_MIN)
     plt.ylabel(STR_Pred_Penalty)
-    plt.ylim(0,np.amax(PredPenalties[proposed_idx])*1.1)
+    # plt.ylim(0,np.amax(PredPenalties[proposed_idx])*1.1)
 
     fig.savefig(FIG_PATH+"/pred_penalty.pdf", bbox_inches='tight')
 
