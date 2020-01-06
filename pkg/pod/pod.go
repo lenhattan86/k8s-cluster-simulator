@@ -98,6 +98,23 @@ func (status Status) MarshalJSON() ([]byte, error) {
 func NewPod(pod *v1.Pod, boundAt clock.Clock, status Status, node string) (*Pod, error) {
 	path := parsePath(pod)
 	// load specs from file.
+	if path == "" {
+		spec, numPhase, err := parseSpec(pod)
+		if err != nil {
+			return nil, err
+		}
+		return &Pod{
+			v1:           pod,
+			spec:         spec,
+			boundAt:      boundAt,
+			status:       status,
+			node:         node,
+			path:         path,
+			numPhase:     numPhase,
+			loadPhase:    numPhase,
+			currentPhase: 0,
+		}, nil
+	}
 	podFromFile, err := loadPodFromFile(path)
 	if err != nil {
 		return nil, err
@@ -107,11 +124,6 @@ func NewPod(pod *v1.Pod, boundAt clock.Clock, status Status, node string) (*Pod,
 		return nil, err
 	}
 	podFromFile = nil
-
-	// spec, numPhase, err := parseSpec(pod)
-	// if err != nil {
-	// 	return nil, err
-	// }
 
 	newLoadPhase := clock.LOAD_PHASE_CACHE
 	if newLoadPhase >= numPhase {

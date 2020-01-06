@@ -23,6 +23,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 
 	"k8s.io/klog"
 
@@ -778,7 +779,24 @@ func jobName(pod *v1.Pod) string {
 // PodFitsResources checks if a node has sufficient resources, such as cpu, memory, gpu, opaque int resources etc to run a pod.
 // First return value indicates whether a node has sufficient resources to run a pod while the second return value indicates the
 // predicate failure reasons if the node has insufficient resources to run the pod.
+var MIN_RESOURCE = schedulernodeinfo.Resource{MilliCPU: -1,
+	Memory: -1}
+var MaxAvailableResource = MIN_RESOURCE
+var MaxAvailableResourceMutex = sync.RWMutex{}
+
 func PodFitsResources(pod *v1.Pod, meta PredicateMetadata, nodeInfo *schedulernodeinfo.NodeInfo) (bool, []PredicateFailureReason, error) {
+	allocatable := nodeInfo.AllocatableResource()
+	// if MaxAvailableResource.MilliCPU < 0 {
+	// 	MaxAvailableResourceMutex.Lock()
+	// 	if allocatable.MilliCPU-nodeInfo.RequestedResource().MilliCPU > MaxAvailableResource.MilliCPU {
+	// 		MaxAvailableResource.MilliCPU = allocatable.MilliCPU - nodeInfo.RequestedResource().MilliCPU
+	// 	}
+	// 	if allocatable.Memory-nodeInfo.RequestedResource().Memory > MaxAvailableResource.Memory {
+	// 		MaxAvailableResource.Memory = allocatable.Memory - nodeInfo.RequestedResource().Memory
+	// 	}
+	// 	MaxAvailableResourceMutex.Unlock
+	// }
+
 	node := nodeInfo.Node()
 	if node == nil {
 		return false, nil, fmt.Errorf("node not found")
@@ -810,7 +828,6 @@ func PodFitsResources(pod *v1.Pod, meta PredicateMetadata, nodeInfo *schedulerno
 		return len(predicateFails) == 0, predicateFails, nil
 	}
 
-	allocatable := nodeInfo.AllocatableResource()
 	if allocatable.MilliCPU < podRequest.MilliCPU+nodeInfo.RequestedResource().MilliCPU {
 		predicateFails = append(predicateFails, NewInsufficientResourceError(v1.ResourceCPU, podRequest.MilliCPU, nodeInfo.RequestedResource().MilliCPU, allocatable.MilliCPU))
 	}

@@ -45,6 +45,7 @@ type GenericScheduler struct {
 
 	lastNodeIndex     uint64
 	preemptionEnabled bool
+	failQueue         *queue.FIFOQueue
 }
 
 // NewGenericScheduler creates a new GenericScheduler.
@@ -52,6 +53,7 @@ func NewGenericScheduler(preeptionEnabled bool) GenericScheduler {
 	return GenericScheduler{
 		predicates:        map[string]predicates.FitPredicate{},
 		preemptionEnabled: preeptionEnabled,
+		failQueue:         queue.NewFIFOQueue(),
 	}
 }
 
@@ -109,63 +111,87 @@ func (sched *GenericScheduler) Schedule(
 		}
 
 		if err != nil {
-			updatePodStatusSchedulingFailure(clock, pod, err)
+			// queue failed pods to fail queue, and resubmit back the the queue later.
+			if KeepScheduling {
+				err = sched.failQueue.Push(pod)
+				if err != nil {
+					log.L.Errorf("Cannot push pod to failQueue: %v", err)
+				}
+				pendingPods.Pop()
+				if sched.failQueue.Len() > KeepSchedulingTimeout {
+					break
+				}
+			} else {
+				updatePodStatusSchedulingFailure(clock, pod, err)
+				// If failed to select a node that can accommodate the pod, ...
+				if fitError, ok := err.(*core.FitError); ok {
+					log.L.Tracef("Pod %v does not fit in any node", pod)
+					log.L.Debugf("Pod %s does not fit in any node", podKey)
 
-			// If failed to select a node that can accommodate the pod, ...
-			if fitError, ok := err.(*core.FitError); ok {
-				log.L.Tracef("Pod %v does not fit in any node", pod)
-				log.L.Debugf("Pod %s does not fit in any node", podKey)
+					// ... and preemption is enabled, ...
+					if sched.preemptionEnabled {
+						log.L.Debug("Trying preemption")
 
-				// ... and preemption is enabled, ...
-				if sched.preemptionEnabled {
-					log.L.Debug("Trying preemption")
+						// ... try to preempt other low-priority pods.
+						delEvents, err := sched.preempt(pod, pendingPods, nodeLister, nodeInfoMap, fitError)
+						if err != nil {
+							return []Event{}, err
+						}
 
-					// ... try to preempt other low-priority pods.
-					delEvents, err := sched.preempt(pod, pendingPods, nodeLister, nodeInfoMap, fitError)
-					if err != nil {
-						return []Event{}, err
+						// Delete the victim pods.
+						results = append(results, delEvents...)
 					}
 
-					// Delete the victim pods.
-					results = append(results, delEvents...)
+					// Else, stop the scheduling process at this clock.
+					break
+				} else {
+					return []Event{}, nil
 				}
-
-				// Else, stop the scheduling process at this clock.
-				break
-			} else {
-				return []Event{}, nil
 			}
-		}
-
-		// If found a node that can accommodate the pod, ...
-		log.L.Debugf("Selected node %s", result.SuggestedHost)
-		if _, ok := NodeMetricsCache[result.SuggestedHost]; ok {
-			request := kutil.GetResourceRequest(pod)
-			NodeMetricsCache[result.SuggestedHost].Usage.MilliCPU += request.MilliCPU
-			NodeMetricsCache[result.SuggestedHost].Usage.Memory += request.Memory
 		} else {
-			NodeMetricsCache[result.SuggestedHost] = &NodeMetrics{
-				Usage:       *kutil.GetResourceRequest(pod),
-				Allocatable: nodeInfoMap[result.SuggestedHost].AllocatableResource(),
+			// If found a node that can accommodate the pod, ...
+			log.L.Debugf("Selected node %s", result.SuggestedHost)
+			if _, ok := NodeMetricsCache[result.SuggestedHost]; ok {
+				request := kutil.GetResourceRequest(pod)
+				NodeMetricsCache[result.SuggestedHost].Usage.MilliCPU += request.MilliCPU
+				NodeMetricsCache[result.SuggestedHost].Usage.Memory += request.Memory
+			} else {
+				NodeMetricsCache[result.SuggestedHost] = &NodeMetrics{
+					Usage:       *kutil.GetResourceRequest(pod),
+					Allocatable: nodeInfoMap[result.SuggestedHost].AllocatableResource(),
+				}
 			}
-		}
 
-		pod, _ = pendingPods.Pop()
-		updatePodStatusSchedulingSucceess(clock, pod)
-		if err := pendingPods.RemoveNominatedNode(pod); err != nil {
-			return []Event{}, err
-		}
+			pod, _ = pendingPods.Pop()
+			updatePodStatusSchedulingSucceess(clock, pod)
+			if err := pendingPods.RemoveNominatedNode(pod); err != nil {
+				return []Event{}, err
+			}
 
-		nodeInfo, ok := nodeInfoMap[result.SuggestedHost]
-		if !ok {
-			return []Event{}, fmt.Errorf("No node named %s", result.SuggestedHost)
-		}
-		nodeInfo.AddPod(pod)
+			nodeInfo, ok := nodeInfoMap[result.SuggestedHost]
+			if !ok {
+				return []Event{}, fmt.Errorf("No node named %s", result.SuggestedHost)
+			}
+			nodeInfo.AddPod(pod)
 
-		// ... then bind it to the node.
-		results = append(results, &BindEvent{Pod: pod, ScheduleResult: result})
+			// ... then bind it to the node.
+			results = append(results, &BindEvent{Pod: pod, ScheduleResult: result})
+		}
 	}
-
+	if KeepScheduling {
+		for {
+			// For each pod popped from the front of the queue, ...
+			pod, err := sched.failQueue.Pop()
+			if err != nil {
+				if err == queue.ErrEmptyQueue {
+					break
+				} else {
+					return []Event{}, errors.New("Unexpected error raised by Queueu.Pop()")
+				}
+			}
+			pendingPods.Push(pod)
+		}
+	}
 	return results, nil
 }
 
@@ -191,7 +217,9 @@ func (sched *GenericScheduler) scheduleOne(
 
 	// Filter out nodes that cannot accommodate the pod.
 	start := time.Now()
+	// set
 	nodesFiltered, failedPredicateMap, err := sched.filter(pod, nodes, nodeInfoMap, podQueue)
+
 	if err != nil {
 		return result, err
 	}

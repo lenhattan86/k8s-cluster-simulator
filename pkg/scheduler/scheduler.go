@@ -41,6 +41,8 @@ var TargetQoS float32
 var PenaltyTimeout int
 var PrevPredictions map[string]*NodeMetrics
 var prevQoS = float32(1.0)
+var KeepScheduling = true
+var KeepSchedulingTimeout = 10000
 
 // Scheduler defines the lowest-level scheduler interface.
 type Scheduler interface {

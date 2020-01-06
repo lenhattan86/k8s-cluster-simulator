@@ -237,6 +237,7 @@ func (s *mySubmitter) newRandomPod(idx uint64, clock clock.Clock) *v1.Pod {
 			Namespace: "default",
 			Annotations: map[string]string{
 				"simSpec": simSpec,
+				"path":    "",
 			},
 		},
 		Spec: v1.PodSpec{

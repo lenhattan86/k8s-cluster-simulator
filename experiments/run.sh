@@ -41,8 +41,8 @@ then
     metricsTick=60
 else
     nodeNum=1
-    totalPodNumber=1
-    targetNum=1
+    totalPodNumber=100
+    targetNum=100
     cpuPerNode=64
     memPerNode=128
     start="2019-01-01T00:00:00+09:00"
@@ -89,7 +89,8 @@ runSim(){
 if $isOfficial
 then
     SECONDS=0
-    # runSim $GENERIC true true
+    queueClass=0; priorityType=0;
+    runSim $GENERIC true true $queueClass $priorityType $GENERIC
     echo "Generating workload took $SECONDS seconds"
 
     SECONDS=0 
@@ -101,7 +102,8 @@ then
     echo "simulation took $SECONDS seconds"
 else
     SECONDS=0
-    # runSim $GENERIC true false
+    queueClass=0; priorityType=0;
+    runSim $GENERIC true false $queueClass $priorityType $GENERIC
     echo "Generating workload took $SECONDS seconds"
 
     SECONDS=0 

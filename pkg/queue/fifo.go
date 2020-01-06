@@ -127,4 +127,8 @@ func (fifo *FIFOQueue) Metrics(qualityOfService, predictionPenalty, podQoses, nu
 	}
 }
 
+func (fifo *FIFOQueue) Len() int {
+	return len(fifo.queue)
+}
+
 var _ = PodQueue(&FIFOQueue{})
