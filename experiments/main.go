@@ -33,6 +33,7 @@ import (
 	"k8s.io/kubernetes/pkg/scheduler/algorithm/priorities"
 
 	kubesim "github.com/pfnet-research/k8s-cluster-simulator/pkg"
+	"github.com/pfnet-research/k8s-cluster-simulator/pkg/clock"
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/queue"
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/scheduler"
 	kutil "k8s.io/kubernetes/pkg/scheduler/util"
@@ -76,10 +77,10 @@ var (
 	// schedulerName       = "proposed"
 	globalOverSubFactor = 4.0
 
-	meanSec              = 10.0
+	meanSec              = 2.0
 	meanCpu              = 4.0
 	cpuStd               = 3.0
-	phasNum              = 1
+	phasNum              = 5
 	requestCpu           = 8.0
 	requestMem           = 0.001
 	startClockStr        = "2019-01-01T00:00:00+09:00"
@@ -88,6 +89,9 @@ var (
 	tick                 = 1
 	nodeMaxCap           = []int{64 * 1000, 128 * 1024, 1 * 1024 * 1024}
 	workloadSubfolderCap = 2
+	loadPhaseCache       = 10
+	queueClass           = 0
+	priorityType         = 0
 )
 
 const workerNum = 16
@@ -136,9 +140,14 @@ func init() {
 		&targetQoS, "target-qos", 1.0, "target qos")
 	rootCmd.PersistentFlags().Float32Var(
 		&penaltyUpdate, "penalty-update", 1.0, "target qos")
+	rootCmd.PersistentFlags().IntVar(
+		&loadPhaseCache, "load-phase-cache", 100, "number of phases in a pod loaded at a time")
+	rootCmd.PersistentFlags().IntVar(
+		&queueClass, "queue-class", 0, "queue class: 0: FIFO, 1: PriorityQueue")
+	rootCmd.PersistentFlags().IntVar(
+		&priorityType, "priority-type", 0, "priority type: default=0, large-to-small-request=1")
 }
 
-var queueClass = 0
 var rootCmd = &cobra.Command{
 	Use:   "k8s-cluster-simulator",
 	Short: "k8s-cluster-simulator provides a virtual kubernetes cluster interface for evaluating your scheduler.",
@@ -151,10 +160,17 @@ var rootCmd = &cobra.Command{
 		if sched == nil {
 			return
 		}
-		queue := queue.NewPriorityQueue(queueClass)
+
+		var q queue.PodQueue
+		if queueClass == 0 {
+			q = queue.NewFIFOQueue()
+		} else if queueClass == 1 {
+			q = queue.NewPriorityQueue(priorityType)
+		}
+
 		endClock, err := BuildClock(endClockStr, 0)
 
-		kubesim := kubesim.NewKubeSimFromConfigPathOrDie(configPath, queue, sched, endClock)
+		kubesim := kubesim.NewKubeSimFromConfigPathOrDie(configPath, q, sched, endClock)
 		nodes, _ := kubesim.List()
 		for _, node := range nodes {
 			predicates.NodesOverSubFactors[node.Name] = globalOverSubFactor
@@ -341,6 +357,9 @@ func buildScheduler() scheduler.Scheduler {
 	log.L.Infof("targetQoS: %v", targetQoS)
 	log.L.Infof("penaltyTimeout: %v", penaltyTimeout)
 	log.L.Infof("penaltyUpdate: %v", penaltyUpdate)
+	log.L.Infof("loadPhaseCache: %v", loadPhaseCache)
+	log.L.Infof("queueClass: %v", queueClass)
+	log.L.Infof("priorityType: %v", priorityType)
 	log.L.Infof("isDistributedTasks: %v", isDistributedTasks)
 	log.L.Infof("isMultipleResource: %v", isMultipleResource)
 
@@ -348,6 +367,8 @@ func buildScheduler() scheduler.Scheduler {
 	scheduler.PenaltyTimeout = penaltyTimeout
 	scheduler.TargetQoS = targetQoS
 	scheduler.PenaltyUpdate = penaltyUpdate
+
+	clock.LOAD_PHASE_CACHE = loadPhaseCache
 
 	switch schedName := strings.ToLower(schedulerName); schedName {
 	// case ONE_SHOT:
@@ -378,7 +399,6 @@ func buildScheduler() scheduler.Scheduler {
 
 	// 	return &sched
 	case PROPOSED:
-		queueClass = 1
 		log.L.Infof("Scheduler: %s", PROPOSED)
 		globalOverSubFactor = 1.0
 		sched := scheduler.NewGenericScheduler(false)
@@ -407,7 +427,6 @@ func buildScheduler() scheduler.Scheduler {
 
 		return &sched
 	case OVER_SUB:
-		queueClass = 0
 		log.L.Infof("Scheduler: %s", OVER_SUB)
 		sched := scheduler.NewGenericScheduler(false)
 
@@ -428,7 +447,6 @@ func buildScheduler() scheduler.Scheduler {
 
 		return &sched
 	case BEST_FIT:
-		queueClass = 0
 		log.L.Infof("Scheduler: %s", BEST_FIT)
 		globalOverSubFactor = 1.0
 		sched := scheduler.NewGenericScheduler(false)
@@ -459,7 +477,6 @@ func buildScheduler() scheduler.Scheduler {
 
 		return &sched
 	case WOSRT_FIT:
-		queueClass = 0
 		log.L.Infof("Scheduler: %s", WOSRT_FIT)
 		globalOverSubFactor = 1.0
 		sched := scheduler.NewGenericScheduler(false)

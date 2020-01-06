@@ -21,6 +21,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+var LOAD_PHASE_CACHE = 2
+
 // Clock wraps a time.Time to represent a simulated time.
 type Clock struct {
 	inner metav1.Time

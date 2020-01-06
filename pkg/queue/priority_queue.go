@@ -27,7 +27,6 @@ import (
 // The pods are sorted by their priority, which can be configured by users.
 type PriorityQueue struct {
 	// PriorityQueue wraps rawPriorityQueue for type-safetiness.
-
 	inner         rawPriorityQueue
 	nominatedPods map[string]map[string]*v1.Pod
 }
@@ -260,7 +259,7 @@ func DefaultComparator(pod0, pod1 *v1.Pod) bool {
 func ResourceRequestComparator(pod0, pod1 *v1.Pod) bool {
 	r0 := kutil.GetResourceRequest(pod0)
 	r1 := kutil.GetResourceRequest(pod1)
-	return r0.Memory < r1.Memory
+	return r0.Memory > r1.Memory
 }
 
 func newWithItems(items map[string]*item, comparator Compare) *PriorityQueue {

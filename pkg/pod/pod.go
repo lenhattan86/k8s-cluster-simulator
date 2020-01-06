@@ -27,8 +27,6 @@ import (
 	"github.com/pfnet-research/k8s-cluster-simulator/pkg/util"
 )
 
-const LOAD_PHASE_CACHE = 10
-
 // Pod represents a simulated pod.
 type Pod struct {
 	v1           *v1.Pod
@@ -97,7 +95,7 @@ func (status Status) MarshalJSON() ([]byte, error) {
 
 // NewPod creates a pod with the given v1.Pod, the clock at which the pod was bound to a node, and
 // the pod's status.
-func NewPod(pod *v1.Pod, boundAt clock.Clock, status Status, node string, currentPhase, loadPhase int, currentSpec spec) (*Pod, error) {
+func NewPod(pod *v1.Pod, boundAt clock.Clock, status Status, node string) (*Pod, error) {
 	path := parsePath(pod)
 	// load specs from file.
 	podFromFile, err := loadPodFromFile(path)
@@ -115,15 +113,13 @@ func NewPod(pod *v1.Pod, boundAt clock.Clock, status Status, node string, curren
 	// 	return nil, err
 	// }
 
-	newLoadPhase := LOAD_PHASE_CACHE
+	newLoadPhase := clock.LOAD_PHASE_CACHE
 	if newLoadPhase >= numPhase {
 		newLoadPhase = numPhase
 		path = ""
 	}
 	newSpec := make(spec, 0, newLoadPhase)
-	for i := 0; i < newLoadPhase; i++ {
-		newSpec = append(newSpec, pSpec[i])
-	}
+	newSpec = append(newSpec, pSpec[:newLoadPhase]...)
 	pSpec = nil
 
 	newPod := Pod{
@@ -135,9 +131,8 @@ func NewPod(pod *v1.Pod, boundAt clock.Clock, status Status, node string, curren
 		path:         path,
 		numPhase:     numPhase,
 		loadPhase:    newLoadPhase,
-		currentPhase: currentPhase,
+		currentPhase: 0,
 	}
-
 	return &newPod, nil
 }
 
@@ -168,34 +163,22 @@ func loadPodFromFile(filePath string) (*v1.Pod, error) {
 	return &pod, nil
 }
 
-func UpdatePod(pod *v1.Pod, boundAt clock.Clock, status Status, node string, currentPhase, loadPhase int, numPhase int, currentSpec spec, pSpec spec, path string) (*Pod, error) {
+func UpdatePod(pod *v1.Pod, boundAt clock.Clock, status Status, node string, currentPhase, loadPhase int, numPhase int, currSpec spec, pSpec spec, path string) (*Pod, error) {
 
-	newLoadPhase := loadPhase + LOAD_PHASE_CACHE
+	newLoadPhase := loadPhase + clock.LOAD_PHASE_CACHE
 	if newLoadPhase >= numPhase {
 		newLoadPhase = numPhase
 		path = ""
 	}
 
-	var newSpec spec
-
-	if currentSpec == nil {
-		more := make(spec, newLoadPhase)
-		for i := 0; i < newLoadPhase; i++ {
-			newSpec = append(more, pSpec[i])
-		}
-		newSpec = more
-	} else {
-		more := make(spec, newLoadPhase-loadPhase)
-		for i := loadPhase; i < newLoadPhase; i++ {
-			more = append(more, pSpec[i])
-		}
-		newSpec = append(currentSpec, more...)
-	}
+	more := make(spec, 0, newLoadPhase-loadPhase)
+	more = append(more, pSpec[loadPhase:newLoadPhase]...)
+	currSpec = append(currSpec, more...)
 	pSpec = nil
 
 	newPod := Pod{
 		v1:           pod,
-		spec:         newSpec,
+		spec:         currSpec,
 		boundAt:      boundAt,
 		status:       status,
 		node:         node,
@@ -263,25 +246,26 @@ func (pod *Pod) ResourceUsage(clock clock.Clock) v1.ResourceList {
 			break
 		}
 	}
-	//delete past phases & load new phases
+	//delete the past phases & load new phases
 	if stop >= 0 {
-		phase := pod.spec[stop]
+		res := pod.spec[stop].resourceUsage
 		if stop > 0 {
 			pod.spec[stop].seconds = phaseDurationAcc
-			pod.spec = pod.spec[stop:]
-			pod.currentPhase++
+			remainLen := len(pod.spec) - stop
+			remain := make(spec, 0, remainLen)
+			remain = append(remain, pod.spec[stop:]...)
+			pod.spec = remain
+			pod.currentPhase += stop
 		}
 		//loading more phases
-		if pod.path != "" {
-			if pod.currentPhase >= pod.loadPhase-1 && pod.loadPhase < pod.numPhase {
-				loadPod, _ := pod.loadPod()
-				pod.spec = loadPod.spec
-				pod.currentPhase = loadPod.currentPhase
-				pod.loadPhase = loadPod.loadPhase
-			}
+		if pod.currentPhase >= pod.loadPhase-1 && pod.loadPhase < pod.numPhase {
+			loadPod, _ := pod.loadPod()
+			pod.spec = loadPod.spec
+			pod.loadPhase = loadPod.loadPhase
+			pod.path = loadPod.path
 		}
 
-		return phase.resourceUsage
+		return res
 	}
 
 	log.L.Panic("Unreachable code in pod.ResourceUsage()")

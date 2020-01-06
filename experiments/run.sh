@@ -21,8 +21,10 @@ penaltyTimeout=10
 predictionPenalty=1.5
 targetQoS=0.99
 penaltyUpdate=0.99
+loadPhaseCache=10
 isDistributeTasks="true"
 isMultipleResource="true"
+
 
 if $isOfficial
 then
@@ -38,13 +40,13 @@ then
     tick=60
     metricsTick=60
 else
-    nodeNum=2
-    totalPodNumber=100
-    targetNum=100
+    nodeNum=1
+    totalPodNumber=1
+    targetNum=1
     cpuPerNode=64
     memPerNode=128
     start="2019-01-01T00:00:00+09:00"
-    end="2019-01-01T01:00:00+09:00"
+    end="2019-01-02T00:00:00+09:00"
     pathToTrace="/ssd/projects/google-trace-data/task-res"
     pathToWorkload="./tmp/workload"
     log_path="./log"
@@ -78,32 +80,35 @@ runSim(){
     --target-qos=$targetQoS \
     --penalty-update=$penaltyUpdate \
     --is-multiple-resource=$isMultipleResource \
-    &> run_${1}.out
+    --load-phase-cache=$loadPhaseCache \
+    --queue-class=$4 \
+    --priority-type=$5 \
+    &> run_${6}.out
 }
 
 if $isOfficial
 then
     SECONDS=0
-    runSim $GENERIC true true
+    # runSim $GENERIC true true
     echo "Generating workload took $SECONDS seconds"
 
     SECONDS=0 
-    echo "running simulation"
-    runSim $PROPOSED false false &
-    runSim $WORST_FIT false false &
-    runSim $OVER_SUB false false &    
+    echo "running simulation"    
+    queueClass=1; priorityType=1; runSim $PROPOSED false false $queueClass $priorityType $PROPOSED & 
+    queueClass=1; priorityType=0; runSim $WORST_FIT false false $queueClass $priorityType $WORST_FIT &
+    queueClass=1; priorityType=0; runSim $OVER_SUB false false $queueClass $priorityType $OVER_SUB &    
     wait
     echo "simulation took $SECONDS seconds"
 else
     SECONDS=0
-    runSim $GENERIC true false
+    # runSim $GENERIC true false
     echo "Generating workload took $SECONDS seconds"
 
     SECONDS=0 
     echo "running simulation"
-    runSim $PROPOSED false false &
-    runSim $WORST_FIT false false &
-    runSim $OVER_SUB false false  &
+    queueClass=0; priorityType=0; runSim $PROPOSED false false $queueClass $priorityType $PROPOSED & 
+    queueClass=0; priorityType=0; runSim $WORST_FIT false false $queueClass $priorityType $WORST_FIT &
+    queueClass=0; priorityType=0; runSim $OVER_SUB false false $queueClass $priorityType $OVER_SUB &    
     wait
     echo "simulation took $SECONDS seconds"
 fi

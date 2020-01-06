@@ -102,7 +102,7 @@ func (node *Node) BindPod(clock clock.Clock, v1Pod *v1.Pod) (*pod.Pod, error) {
 	podStatus = pod.Ok // TODO(tanle) workaround for Oversub --> need to delete this line
 
 	// Create simulated pod
-	simPod, err := pod.NewPod(v1Pod, clock, podStatus, node.ToV1().Name, 0, 0, nil)
+	simPod, err := pod.NewPod(v1Pod, clock, podStatus, node.ToV1().Name)
 	if err != nil {
 		return nil, err
 	}
