@@ -33,7 +33,7 @@ var TimingMap = make(map[string]int64)
 var PenaltyMap = make(map[string]float32)
 var PenaltyTiming = make(map[string]int)
 var PredictionPenalty float32
-var MaxPenalty = float32(2)
+var MaxPenalty = float32(3)
 var MinPenalty = float32(1.0)
 var PenaltyUpdate float32
 var StopUpdate = false
@@ -85,6 +85,13 @@ type NodeMetrics struct {
 
 func max(a, b float32) float32 {
 	if a > b {
+		return a
+	}
+	return b
+}
+
+func min(a, b float32) float32 {
+	if a < b {
 		return a
 	}
 	return b
@@ -164,6 +171,7 @@ func Estimate(nodeNames []string) map[string]*NodeMetrics {
 		if qos < TargetQoS {
 			if penaltyUpdated || qos < (prevQoS*0.99) {
 				PredictionPenalty += (PredictionPenalty - 1.0)
+				PredictionPenalty = min(PredictionPenalty, MaxPenalty)
 				penaltyUpdated = false
 			}
 		} else if qos > TargetQoS {

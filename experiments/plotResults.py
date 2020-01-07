@@ -302,7 +302,7 @@ if plotUtilization:
     if cpuCap == 0:
         cpuCap = 1.0
 
-    Y_MAX = 200
+    Y_MAX = 250
 
     for i in range(methodsNum):
         cpuR = cpuRequests[i]
@@ -337,7 +337,7 @@ if plotUtilization:
     ax.set_xticks(x)
     ax.set_xticklabels(labels)
     ax.legend( loc='best')    
-    plt.ylim(0,Y_MAX*1.1)
+    plt.ylim(0,Y_MAX)
 
     fig.savefig(FIG_PATH+"/request-avg.pdf", bbox_inches='tight')
 
@@ -352,7 +352,7 @@ if plotUtilization:
     ax.set_xticks(x)
     ax.set_xticklabels(labels)
     ax.legend( loc='best')    
-    plt.ylim(0,Y_MAX*1.1)
+    plt.ylim(0,Y_MAX)
 
     fig.savefig(FIG_PATH+"/demand-avg.pdf", bbox_inches='tight')
 
@@ -367,7 +367,7 @@ if plotUtilization:
     ax.set_xticks(x)
     ax.set_xticklabels(labels)
     ax.legend( loc='best')    
-    plt.ylim(0,Y_MAX*1.1)
+    plt.ylim(0,Y_MAX)
 
     fig.savefig(FIG_PATH+"/usage-avg.pdf", bbox_inches='tight')
 
@@ -581,7 +581,7 @@ if plotPredictionPenalty:
     plt.legend(legends, loc='best')
     plt.xlabel(STR_TIME_MIN)
     plt.ylabel(STR_Pred_Penalty)    
-    plt.ylim(0,Y_MAX*1.1)
+    plt.ylim(0,Y_MAX*1.2)
 
     fig.savefig(FIG_PATH+"/pred_penalty.pdf", bbox_inches='tight')
 
