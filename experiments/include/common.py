@@ -27,6 +27,7 @@ STR_CORREFF = "correff"
 STR_TIME = "time"
 STR_TIME_LAG = "time lag (mins)"
 STR_TIME_MIN = "time (mins)"
+STR_TIME_HOUR = "time (hours)"
 STR_TIME_DAY = "time (days)"
 STR_TIME_SEC = "time (secs)"
 

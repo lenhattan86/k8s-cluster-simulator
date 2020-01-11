@@ -15,7 +15,7 @@ from common import *
 from utils import *
 from data_utils import *
 
-tick = 1
+tick = 1 # mins
 ## plot utilization: number of busy nodes.
 cap = 64
 data_range=[10, 1000000]
@@ -39,7 +39,7 @@ if arg_len > 0:
     path=sys.argv[1]
 
 # path = "./"
-# line_num = 60*24
+line_num = -1 # 60*24
 def loadLog(filepath) :
     cpuUsages = []
     maxCpuUsages = []
@@ -172,8 +172,10 @@ def loadLog(filepath) :
                 PredPenalty.append(float(queue['PredictionPenalty']))
 
             i=i+1            
-            # if line_num > 0 and i >= line_num:
-            #     break
+            
+            if line_num > 0 and i >= line_num:
+                break
+
             line = fp.readline()
 
     fp.close()
@@ -273,15 +275,15 @@ if plotObj:
     fig = plt.figure(figsize=FIG_ONE_COL)
     max_len = 0
     for i in range(methodsNum):
-        plt.plot(range(0,len(maxCpuUsages[i])*tick,tick), maxCpuUsages[i], color=colors[i])
+        plt.plot([x / 60.0 for x in range(0,len(maxCpuUsages[i])*tick,tick)], maxCpuUsages[i], color=colors[i])
         if max_len < len(maxCpuUsages[i]):
             max_len = len(maxCpuUsages[i])
     
-    plt.plot(range(0,max_len*tick,tick), [cap] * max_len, color=COLOR_CAP)
+    plt.plot([x / 60.0 for x in range(0,max_len*tick,tick)], [cap] * max_len, color=COLOR_CAP)
     legends = methodNames
     legends.append('capacity')
     plt.legend(legends, loc='best')
-    plt.xlabel('time (minutes)')
+    plt.xlabel(STR_TIME_HOUR)
     plt.ylabel(STR_CPU_CORES)
     plt.suptitle("Max Cpu Usage")
     # plt.ylim(0,Y_MAX)
@@ -383,14 +385,14 @@ if plotUtilization:
     # Y_MAX = np.amax(cpuRequests)
     fig = plt.figure(figsize=FIG_ONE_COL)
     for i in range(methodsNum):
-        plt.plot(range(0,len(cpuRequests[i])*tick,tick), cpuRequests[i], color=colors[i])
+        plt.plot([x / 60.0 for x in range(0,len(cpuRequests[i])*tick,tick)], cpuRequests[i], color=colors[i])
 
-    plt.plot(range(0,len(cpuAllocatables[0])*tick,tick), cpuAllocatables[0], color=COLOR_CAP)
+    plt.plot([x / 60.0 for x in range(0,len(cpuAllocatables[0])*tick,tick)], cpuAllocatables[0], color=COLOR_CAP)
     legends = methodNames
     legends.append('capacity')
 
     plt.legend(legends, loc='best')
-    plt.xlabel(STR_TIME_MIN)
+    plt.xlabel(STR_TIME_HOUR)
     plt.ylabel(STR_CPU_CORES)
     # plt.ylim(0,Y_MAX)
     fig.savefig(FIG_PATH+"/total-request-cpu.pdf", bbox_inches='tight')
@@ -398,14 +400,14 @@ if plotUtilization:
 
     fig = plt.figure(figsize=FIG_ONE_COL)
     for i in range(methodsNum):
-        plt.plot(range(0,len(memRequests[i])*tick,tick), memRequests[i], color=colors[i])
+        plt.plot([x / 60.0 for x in range(0,len(memRequests[i])*tick,tick)], memRequests[i], color=colors[i])
 
-    plt.plot(range(0,len(memAllocatables[0])*tick,tick), memAllocatables[0], color=COLOR_CAP)
+    plt.plot([x / 60.0 for x in range(0,len(memAllocatables[0])*tick,tick)], memAllocatables[0], color=COLOR_CAP)
     legends = methodNames
     legends.append('capacity')
 
     plt.legend(legends, loc='best')
-    plt.xlabel(STR_TIME_MIN)
+    plt.xlabel(STR_TIME_HOUR)
     plt.ylabel(STR_MEM_GB)
     # plt.ylim(0,Y_MAX)
 
@@ -414,14 +416,14 @@ if plotUtilization:
     # Y_MAX = np.amax(cpuRequests)
     fig = plt.figure(figsize=FIG_ONE_COL)
     for i in range(methodsNum):
-        plt.plot(range(0,len(cpuUsages[i])*tick,tick), cpuUsages[i], color=colors[i])
+        plt.plot([x / 60.0 for x in range(0,len(cpuUsages[i])*tick,tick)], cpuUsages[i], color=colors[i])
     
-    plt.plot(range(0,len(cpuAllocatables[0])*tick,tick), cpuAllocatables[0], color=COLOR_CAP)
+    plt.plot([x / 60.0 for x in range(0,len(cpuAllocatables[0])*tick,tick)], cpuAllocatables[0], color=COLOR_CAP)
     legends = methodNames
     legends.append('capacity')
 
     plt.legend(legends, loc='best')
-    plt.xlabel(STR_TIME_MIN)
+    plt.xlabel(STR_TIME_HOUR)
     plt.ylabel(STR_CPU_CORES)
     # plt.ylim(0,Y_MAX)
 
@@ -429,14 +431,14 @@ if plotUtilization:
 
     fig = plt.figure(figsize=FIG_ONE_COL)
     for i in range(methodsNum):
-        plt.plot(range(0,len(memUsages[i])*tick,tick), memUsages[i], color=colors[i])
+        plt.plot([x / 60.0 for x in range(0,len(memUsages[i])*tick,tick)], memUsages[i], color=colors[i])
     
-    plt.plot(range(0,len(memAllocatables[0])*tick,tick), memAllocatables[0], color=COLOR_CAP)
+    plt.plot([x / 60.0 for x in range(0,len(memAllocatables[0])*tick,tick)], memAllocatables[0], color=COLOR_CAP)
     legends = methodNames
     legends.append('capacity')
 
     plt.legend(legends, loc='best')
-    plt.xlabel(STR_TIME_MIN)
+    plt.xlabel(STR_TIME_HOUR)
     plt.ylabel(STR_MEM_GB)
     # plt.ylim(0,Y_MAX)
 
@@ -445,14 +447,14 @@ if plotUtilization:
     # Y_MAX = np.amax(cpuRequests)
     fig = plt.figure(figsize=FIG_ONE_COL)
     for i in range(methodsNum):
-        plt.plot(range(0,len(cpuAllocations[i])*tick,tick), cpuAllocations[i], color=colors[i])
+        plt.plot([x / 60.0 for x in range(0,len(cpuAllocations[i])*tick,tick)], cpuAllocations[i], color=colors[i])
     
-    plt.plot(range(0,len(cpuAllocatables[0])*tick,tick), cpuAllocatables[0], color=COLOR_CAP)
+    plt.plot([x / 60.0 for x in range(0,len(cpuAllocatables[0])*tick,tick)], cpuAllocatables[0], color=COLOR_CAP)
     legends = methodNames
     legends.append('capacity')
 
     plt.legend(legends, loc='best')
-    plt.xlabel(STR_TIME_MIN)
+    plt.xlabel(STR_TIME_HOUR)
     plt.ylabel(STR_CPU_CORES)
     # plt.ylim(0,Y_MAX)
 
@@ -460,14 +462,14 @@ if plotUtilization:
 
     fig = plt.figure(figsize=FIG_ONE_COL)
     for i in range(methodsNum):
-        plt.plot(range(0,len(memAllocations[i])*tick,tick), memAllocations[i], color=colors[i])
+        plt.plot([x / 60.0 for x in range(0,len(memAllocations[i])*tick,tick)], memAllocations[i], color=colors[i])
     
-    plt.plot(range(0,len(memAllocatables[0])*tick,tick), memAllocatables[0], color=COLOR_CAP)
+    plt.plot([x / 60.0 for x in range(0,len(memAllocatables[0])*tick,tick)], memAllocatables[0], color=COLOR_CAP)
     legends = methodNames
     legends.append('capacity')
 
     plt.legend(legends, loc='best')
-    plt.xlabel(STR_TIME_MIN)
+    plt.xlabel(STR_TIME_HOUR)
     plt.ylabel(STR_MEM_GB)
     # plt.ylim(0,Y_MAX)
 
@@ -477,10 +479,10 @@ if plotUtilization:
 if plotOverload:
     fig = plt.figure(figsize=FIG_ONE_COL)
     for i in range(methodsNum):
-        plt.plot(range(0,len(overloadNodes[i])*tick,tick), overloadNodes[i], color=colors[i])
+        plt.plot([x / 60.0 for x in range(0,len(overloadNodes[i])*tick,tick)], overloadNodes[i], color=colors[i])
 
     plt.legend(methodNames, loc='best')
-    plt.xlabel(STR_TIME_MIN)
+    plt.xlabel(STR_TIME_HOUR)
     plt.ylabel(STR_NODES)
     plt.suptitle("Overload")
     # plt.ylim(0,Y_MAX)
@@ -491,11 +493,11 @@ if plotOverload:
 if plotOverbook:
     fig = plt.figure(figsize=FIG_ONE_COL)
     for i in range(methodsNum):
-        plt.plot(range(0,len(overbookNodes[i])*tick,tick), overbookNodes[i], color=colors[i])
+        plt.plot([x / 60.0 for x in range(0,len(overbookNodes[i])*tick,tick)], overbookNodes[i], color=colors[i])
     
     legends = methodNames   
     plt.legend(legends, loc='best')
-    plt.xlabel(STR_TIME_MIN)
+    plt.xlabel(STR_TIME_HOUR)
     plt.ylabel(STR_NODES)
     # plt.ylim(0,Y_MAX)
 
@@ -506,11 +508,11 @@ if plotQoS:
     fig = plt.figure(figsize=FIG_ONE_COL)
     for i in range(methodsNum):
         qos = QoSs[i][data_range[0]:data_range[1]]
-        plt.plot(range(0,len(qos)*tick,tick), qos, color=colors[i])
+        plt.plot([x / 60.0 for x in range(0,len(qos)*tick,tick)], qos, color=colors[i])
     
     legends = methodNames   
     plt.legend(legends, loc='best')
-    plt.xlabel(STR_TIME_MIN)
+    plt.xlabel(STR_TIME_HOUR)
     plt.ylabel(STR_QoS)
     plt.ylim(0,1.1)
 
@@ -584,12 +586,12 @@ if plotPredictionPenalty:
     Y_MAX = 1.5
     fig = plt.figure(figsize=FIG_ONE_COL)
     for i in range(methodsNum-proposed_idx):
-        plt.plot(range(0,len(PredPenalties[proposed_idx+i])*tick,tick), PredPenalties[proposed_idx+i], color=colors[proposed_idx+i])
+        plt.plot([x / 60.0 for x in range(0,len(PredPenalties[proposed_idx+i])*tick,tick)], PredPenalties[proposed_idx+i], color=colors[proposed_idx+i])
         Y_MAX = max(np.amax(PredPenalties[proposed_idx+i]),Y_MAX)
     
     legends = methodNames[proposed_idx:]
     plt.legend(legends, loc='best')
-    plt.xlabel(STR_TIME_MIN)
+    plt.xlabel(STR_TIME_HOUR)
     plt.ylabel(STR_Pred_Penalty)    
     plt.ylim(0,Y_MAX*1.2)
 
