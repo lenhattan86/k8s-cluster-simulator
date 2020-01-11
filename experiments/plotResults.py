@@ -31,6 +31,7 @@ plotQoS=True
 plotPredictionPenalty=True
 plotUtilization=True
 loads = [plotUtilization, False, plotOverload, plotOverbook, plotQoS, plotPredictionPenalty]
+showBarValue = False
 
 path = "./log"
 arg_len = len(sys.argv) - 1
@@ -38,7 +39,7 @@ if arg_len > 0:
     path=sys.argv[1]
 
 # path = "./"
-line_num = 60*24
+# line_num = 60*24
 def loadLog(filepath) :
     cpuUsages = []
     maxCpuUsages = []
@@ -171,8 +172,8 @@ def loadLog(filepath) :
                 PredPenalty.append(float(queue['PredictionPenalty']))
 
             i=i+1            
-            if line_num > 0 and i >= line_num:
-                break
+            # if line_num > 0 and i >= line_num:
+            #     break
             line = fp.readline()
 
     fp.close()
@@ -302,7 +303,7 @@ if plotUtilization:
     if cpuCap == 0:
         cpuCap = 1.0
 
-    Y_MAX = 250
+    Y_MAX = 300
 
     for i in range(methodsNum):
         cpuR = cpuRequests[i]
@@ -329,9 +330,12 @@ if plotUtilization:
     # request    
     fig, ax = plt.subplots(figsize=FIG_ONE_COL)
     rects = ax.bar(x - width, cpuReqUtil,  width, label=STR_CPU, color=COLOR_CPU)
-    autolabel(rects, ax)
+    if showBarValue:
+        autolabel(rects, ax)
     rects = ax.bar(x, memReqUtil,  width, label=STR_MEM, color=COLOR_MEM)
-    autolabel(rects, ax)
+    if showBarValue:
+        autolabel(rects, ax)
+
     labels = methodNames
     ax.set_ylabel('Request (%)')
     ax.set_xticks(x)
@@ -344,9 +348,11 @@ if plotUtilization:
     # demand
     fig, ax = plt.subplots(figsize=FIG_ONE_COL)
     rects = ax.bar(x - width, cpuDemandUtil,  width, label=STR_CPU, color=COLOR_CPU)
-    autolabel(rects, ax)
+    if showBarValue:
+        autolabel(rects, ax)
     rects = ax.bar(x, memDemandUtil,  width, label=STR_MEM, color=COLOR_MEM)
-    autolabel(rects, ax)
+    if showBarValue:
+        autolabel(rects, ax)
     labels = methodNames
     ax.set_ylabel('Demand (%)')
     ax.set_xticks(x)
@@ -359,9 +365,11 @@ if plotUtilization:
     # usage
     fig, ax = plt.subplots(figsize=FIG_ONE_COL)
     rects = ax.bar(x - width, cpuUsageUtil,  width, label=STR_CPU, color=COLOR_CPU)
-    autolabel(rects, ax)
+    if showBarValue:
+        autolabel(rects, ax)
     rects = ax.bar(x, memUsageUtil,  width, label=STR_MEM, color=COLOR_MEM)
-    autolabel(rects, ax)
+    if showBarValue:
+        autolabel(rects, ax)
     labels = methodNames
     ax.set_ylabel('Usage (%)')
     ax.set_xticks(x)
@@ -536,7 +544,8 @@ if plotQoS:
         y = round(violation*100/len(qos),1)
         Y_MAX = max(y,Y_MAX)
         rects = ax.bar(i - BAR_WIDTH/2, y,  BAR_WIDTH, color=colors[i])
-        autolabel(rects, ax)
+        if showBarValue:
+            autolabel(rects, ax)
 
     labels = methodNames
     ax.set_ylabel(STR_QoS_Violation)
@@ -560,7 +569,8 @@ if plotQoS:
         y = round(violation*100/total,1)
         Y_MAX = max(y, Y_MAX)
         rects = ax.bar(i - BAR_WIDTH/2, y,  BAR_WIDTH, color=colors[i])
-        autolabel(rects, ax)
+        if showBarValue:
+            autolabel(rects, ax)
 
     labels = methodNames
     ax.set_ylabel(STR_QoS_Violation)
