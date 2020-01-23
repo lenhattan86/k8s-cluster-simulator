@@ -26,3 +26,18 @@ wget --load-cookies /tmp/cookies.txt \
   -O $tarPath/machines.tar && rm -rf /tmp/cookies.txt; \
 sudo tar -xvf $tarPath/machines.tar -C $path; \
 rm -rf $tarPath/machines.tar 
+
+## google trace
+
+
+## install gsutil
+echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list; \
+sudo apt-get install apt-transport-https ca-certificates gnupg; \
+curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add - ;\
+sudo apt-get update && sudo apt-get install google-cloud-sdk; \
+sudo apt-get install google-cloud-sdk-app-engine-java; \
+gcloud init
+
+
+## download
+gsutil cp -R gs://clusterdata-2011-2 ./

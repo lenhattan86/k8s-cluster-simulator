@@ -92,6 +92,7 @@ var (
 	loadPhaseCache       = 10
 	queueClass           = 0
 	priorityType         = 0
+	demandToRequestRatio = float64(1.0)
 )
 
 const workerNum = 16
@@ -146,6 +147,8 @@ func init() {
 		&queueClass, "queue-class", 0, "queue class: 0: FIFO, 1: PriorityQueue")
 	rootCmd.PersistentFlags().IntVar(
 		&priorityType, "priority-type", 0, "priority type: default=0, large-to-small-request=1")
+	rootCmd.PersistentFlags().Float64Var(
+		&demandToRequestRatio, "demand-to-request-ratio", 1.0, "scale up or down demand")
 }
 
 var rootCmd = &cobra.Command{
@@ -260,7 +263,7 @@ func convertTrace2Workload(tracePath string, workloadPath string) {
 			timestamp := int(ArrivalTimeInSeconds(filePath)/tick) * tick // rounding
 			startClock, _ := BuildClock(startClockStr, int64(timestamp-startTimestamp))
 			maxLength := int(endClock.Sub(startClock).Seconds())
-			pod, err := ConvertTraceToPod(filePath, "0", nodeMaxCap[0], nodeMaxCap[1], maxLength)
+			pod, err := ConvertTraceToPod(filePath, "0", nodeMaxCap[0], nodeMaxCap[1], maxLength, demandToRequestRatio)
 			if err == nil && maxLength > 0 {
 				subWorkload := strconv.Itoa(i / workloadSubfolderCap)
 				WritePodAsJson(*pod, workloadPath+"/"+subWorkload, startClock)
@@ -275,7 +278,7 @@ func convertTrace2Workload(tracePath string, workloadPath string) {
 			timestamp := int(ArrivalTimeInSeconds(filePath)/tick) * tick // rounding
 			startClock, _ := BuildClock(startClockStr, int64(timestamp-startTimestamp))
 			maxLength := int(endClock.Sub(startClock).Seconds())
-			pod, err := ConvertTraceToPod(filePath, "0", nodeMaxCap[0], nodeMaxCap[1], maxLength)
+			pod, err := ConvertTraceToPod(filePath, "0", nodeMaxCap[0], nodeMaxCap[1], maxLength, demandToRequestRatio)
 			if err == nil && maxLength > 0 {
 				subWorkload := strconv.Itoa(i / workloadSubfolderCap)
 				WritePodAsJson(*pod, workloadPath+"/"+subWorkload, startClock)
@@ -362,6 +365,7 @@ func buildScheduler() scheduler.Scheduler {
 	log.L.Infof("priorityType: %v", priorityType)
 	log.L.Infof("isDistributedTasks: %v", isDistributedTasks)
 	log.L.Infof("isMultipleResource: %v", isMultipleResource)
+	log.L.Infof("demandToRequestRatio: %v", demandToRequestRatio)
 
 	scheduler.PredictionPenalty = predictionPenalty
 	scheduler.PenaltyTimeout = penaltyTimeout

@@ -219,7 +219,7 @@ def formatMemQuatity(str):
 
 
 methods = ["worstfit", "oversub", "proposed_list", "proposed_largest"]
-methodNames = ["worstfit","oversub", "prop_list", "prop_largest"]
+methodNames = [STR_WORSTFIT, STR_OVERSUB, STR_FLEX_F, STR_FLEX_L]
 colors = [COLOR_WORST_FIT, COLOR_OVER_SUB, COLOR_PROPOSED_1, COLOR_PROPOSED_2]
 proposed_idx = 2
 # methods = ["oneshot","worstfit"]

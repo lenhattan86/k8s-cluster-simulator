@@ -24,7 +24,7 @@ penaltyUpdate=0.99
 loadPhaseCache=10
 isDistributeTasks="true"
 isMultipleResource="true"
-
+demandToRequestRatio=1.0
 
 if $isOfficial
 then
@@ -84,6 +84,7 @@ runSim(){
     --load-phase-cache=$loadPhaseCache \
     --queue-class=$4 \
     --priority-type=$5 \
+    --demand-to-request-ratio=$demandToRequestRatio \
     &> run_$log_file.out
 }
 
@@ -105,7 +106,7 @@ then
 else
     SECONDS=0
     queueClass=0; priorityType=0;
-    runSim $GENERIC true false $queueClass $priorityType $GENERIC
+#    runSim $GENERIC true false $queueClass $priorityType $GENERIC
     echo "Generating workload took $SECONDS seconds"
 
     SECONDS=0 

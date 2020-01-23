@@ -69,7 +69,7 @@ func ArrivalTimeInSeconds(filePath string) int {
 	return timestamp
 }
 
-func ConvertTraceToPod(csvFile string, startTimestamp string, cpuFactor int, memFactor int, maxTaskLengthSeconds int) (*v1.Pod, error) {
+func ConvertTraceToPod(csvFile string, startTimestamp string, cpuFactor int, memFactor int, maxTaskLengthSeconds int, demandToRequestRatio float64) (*v1.Pod, error) {
 	// read csv files
 	phases := []int{}
 	cpuUsages := []int{}
@@ -134,6 +134,9 @@ func ConvertTraceToPod(csvFile string, startTimestamp string, cpuFactor int, mem
 		if m <= 1 {
 			mem = m
 		}
+
+		cpu *= demandToRequestRatio
+		mem *= demandToRequestRatio
 
 		cpuUsage := int(cpu * float64(cpuFactor))
 		memusage := int(mem * float64(memFactor))

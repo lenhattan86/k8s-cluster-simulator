@@ -32,14 +32,14 @@ sudo apt-get -y install python3-scipy
 # sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.5 1
 # sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.6 2
 # sudo update-alternatives --config python30
-sudo apt-get install -y python-pip python3-pip
+# sudo apt-get install -y python-pip python3-pip
 # sudo pip3 install pandas
 # sudo pip3 install --upgrade pip
 # sudo python3 -m pip install -U matplotlib
 
 ## install tensorflow.
-sudo pip install tensorflow; \
-sudo pip3 install tensorflow
+# sudo pip install tensorflow; \
+# sudo pip3 install tensorflow \
 
 # sudo apt install golang-go
 ## download code

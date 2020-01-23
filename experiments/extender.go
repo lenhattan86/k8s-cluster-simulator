@@ -57,7 +57,6 @@ func min(a, b int) int {
 
 func prioritizeLowUsageNode(args api.ExtenderArgs) api.HostPriorityList {
 	priorities := make(api.HostPriorityList, len(*args.NodeNames))
-	request := kutil.GetResourceRequest(args.Pod)
 	if parralel {
 		ctx, _ := context.WithCancel(context.Background())
 		// Run predicate plugins in parallel along nodes.
@@ -66,8 +65,8 @@ func prioritizeLowUsageNode(args api.ExtenderArgs) api.HostPriorityList {
 			if _, ok := scheduler.NodeMetricsCache[name]; ok {
 				usage := scheduler.NodeMetricsCache[name].Usage
 				capacity := scheduler.NodeMetricsCache[name].Allocatable
-				cScore := int(api.MaxPriority * (capacity.MilliCPU - usage.MilliCPU - request.MilliCPU) / capacity.MilliCPU)
-				mScore := int(api.MaxPriority * (capacity.Memory - usage.Memory - request.Memory) / capacity.Memory)
+				cScore := int(api.MaxPriority * (capacity.MilliCPU - usage.MilliCPU) / capacity.MilliCPU)
+				mScore := int(api.MaxPriority * (capacity.Memory - usage.Memory) / capacity.Memory)
 				priorities[i] = api.HostPriority{Host: name, Score: min(cScore, mScore)}
 			} else {
 				priorities[i] = api.HostPriority{Host: name, Score: api.MaxPriority}
@@ -78,8 +77,8 @@ func prioritizeLowUsageNode(args api.ExtenderArgs) api.HostPriorityList {
 			if _, ok := scheduler.NodeMetricsCache[name]; ok {
 				usage := scheduler.NodeMetricsCache[name].Usage
 				capacity := scheduler.NodeMetricsCache[name].Allocatable
-				cScore := int(api.MaxPriority * (capacity.MilliCPU - usage.MilliCPU - request.MilliCPU) / capacity.MilliCPU)
-				mScore := int(api.MaxPriority * (capacity.Memory - usage.Memory - request.Memory) / capacity.Memory)
+				cScore := int(api.MaxPriority * (capacity.MilliCPU - usage.MilliCPU) / capacity.MilliCPU)
+				mScore := int(api.MaxPriority * (capacity.Memory - usage.Memory) / capacity.Memory)
 				priorities[i] = api.HostPriority{Host: name, Score: min(cScore, mScore)}
 			} else {
 				priorities[i] = api.HostPriority{Host: name, Score: api.MaxPriority}

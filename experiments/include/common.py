@@ -40,6 +40,14 @@ STR_CDF = "cdf"
 
 STR_QoS_Violation = "Qos violation (%)"
 
+STR_Cluster_Size = "Cluster size (nodes)"
+
+STR_WORSTFIT = "WorstFit"
+STR_OVERSUB = "Oversub"
+STR_FLEX = "Flex"
+STR_FLEX_F = "FlexF"
+STR_FLEX_L = "FlexL"
+
 ## colors
 # https://matplotlib.org/3.1.1/tutorials/colors/colors.html
 COLOR_CPU = "#4780BA"
