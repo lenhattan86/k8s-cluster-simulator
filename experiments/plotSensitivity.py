@@ -21,6 +21,7 @@ if not os.path.exists(FIG_PATH):
 
 
 plotClusterSize = True
+plotDemandtoRequestRatio = True
 
 methodNames = [STR_WORSTFIT, STR_OVERSUB, STR_FLEX_F, STR_FLEX_L]
 methodsNum = len(methodNames)
@@ -104,3 +105,56 @@ if plotClusterSize:
     plt.ylim(0,Y_MAX)
 
     fig.savefig(FIG_PATH+"/sensitivity_cluster_size_cpu_req.pdf", bbox_inches='tight')
+
+if plotDemandtoRequestRatio:
+    ratios = [0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5]
+
+    ## QoS violation
+    data = []
+    worstFitVals = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+    data.append(worstFitVals)
+    oversubVals = [0, 0.1, 0.4, 2.6, 7.7, 16.5, 27.6, 38.7, 48.6]
+    data.append(oversubVals)
+    flexFVals = [0, 0, 0.2, 0.7, 1.7, 2, 1.2, 1, 1.6]
+    data.append(flexFVals)
+    flexLVals = [0, 0, 0.1, 0.7, 2.7, 3.6, 3.2, 3.5, 2.4]
+    data.append(flexLVals)
+
+    Y_MAX = np.amax(oversubVals)*1.1
+    fig = plt.figure(figsize=FIG_ONE_COL)
+    max_len = 0
+    for i in range(methodsNum):
+        plt.plot(ratios, data[i], color=colors[i])
+    
+    legends = methodNames
+    plt.legend(legends, loc='best')
+    plt.xlabel(STR_Demand_Scale)
+    plt.ylabel(STR_QoS_Violation)
+    plt.ylim(0,Y_MAX)
+
+    fig.savefig(FIG_PATH+"/sensitivity_demand_ratios_qos.pdf", bbox_inches='tight')
+
+    ## CPU Requests
+    data = []
+    worstFitVals= [100, 100, 100, 100, 100, 100, 100, 100, 100]
+    data.append(worstFitVals)
+    oversubVals = [174, 174, 174, 174, 174, 174, 174, 174, 174]
+    data.append(oversubVals)
+    flexFVals =   [174, 174, 174, 174, 164, 154, 142, 141, 114]
+    data.append(flexFVals)
+    flexLVals =   [174, 174, 174, 174, 166, 133, 123, 98, 89]
+    data.append(flexLVals)
+
+    Y_MAX = np.amax(oversubVals)*1.1
+    fig = plt.figure(figsize=FIG_ONE_COL)
+    max_len = 0
+    for i in range(methodsNum):
+        plt.plot(ratios, data[i], color=colors[i])
+    
+    legends = methodNames
+    plt.legend(legends, loc='best')
+    plt.xlabel(STR_Demand_Scale)
+    plt.ylabel("request (%)")  
+    plt.ylim(0,Y_MAX)
+
+    fig.savefig(FIG_PATH+"/sensitivity_demand_ratios_request.pdf", bbox_inches='tight')

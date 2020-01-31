@@ -41,6 +41,7 @@ STR_CDF = "cdf"
 STR_QoS_Violation = "Qos violation (%)"
 
 STR_Cluster_Size = "Cluster size (nodes)"
+STR_Demand_Scale = "Demand scale"
 
 STR_WORSTFIT = "WorstFit"
 STR_OVERSUB = "Oversub"

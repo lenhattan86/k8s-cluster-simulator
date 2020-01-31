@@ -18,6 +18,7 @@ from data_utils import *
 tick = 1 # mins
 ## plot utilization: number of busy nodes.
 cap = 64
+mem_cap = 128
 data_range=[10, 1000000]
 target_qos = 0.99
 
@@ -31,7 +32,7 @@ plotQoS=True
 plotPredictionPenalty=True
 plotUtilization=True
 loads = [plotUtilization, False, plotOverload, plotOverbook, plotQoS, plotPredictionPenalty]
-showBarValue = False
+showBarValue = True
 
 path = "./log"
 arg_len = len(sys.argv) - 1
@@ -59,6 +60,8 @@ def loadLog(filepath) :
     NumSatifiesPods = []
     NumPods = []
     PredPenalty = []
+    cpuUsageStd = []
+    memUsageStd = []
 
     with open(filepath) as fp:
         line = fp.readline()
@@ -87,6 +90,9 @@ def loadLog(filepath) :
                 continue           
 
             nodeDict = data['Nodes']
+            cUsages = []
+            mUsages =[]
+
             for nodeName, node in nodeDict.items():
                 cpuUsage = 0
                 memUsage = 0
@@ -100,11 +106,13 @@ def loadLog(filepath) :
                 for rsName in usageDict:
                     if(rsName==cpuStr):
                         cpuUsage = formatCpuQuatity(usageDict[rsName])
+                        cUsages.append(cpuUsage/cap)
                         totalCpuUsage = totalCpuUsage+ cpuUsage
                         if cpuUsage > maxCpuUsage:
                             maxCpuUsage = cpuUsage
                     elif(rsName==memStr):
                         memUsage = formatMemQuatity(usageDict[rsName])
+                        mUsages.append(memUsage/mem_cap)
                         totalMemUsage = totalMemUsage+ memUsage
                         if memUsage > maxMemUsage:
                             maxMemUsage = memUsage
@@ -154,7 +162,9 @@ def loadLog(filepath) :
                 memRequests.append(totalMemRequest)
                 maxCpuUsages.append(maxCpuUsage)
                 totalCpuAllocations.append(totalCpuAllocation)
-                totalMemAllocations.append(totalMemAllocation)
+                totalMemAllocations.append(totalMemAllocation)                
+                memUsageStd.append(numpy.std(mUsages))
+                cpuUsageStd.append(numpy.std(cUsages))
             if (loads[1]):
                 busyNodes.append(busyNode)
             if (loads[2]):
@@ -177,12 +187,14 @@ def loadLog(filepath) :
                 break
 
             line = fp.readline()
+        
+        
 
     fp.close()
 
     return busyNodes, overloadNodes, overBookNodes, cpuUsages, memUsages, cpuRequests, \
         memRequests, totalCpuAllocations, totalMemAllocations, maxCpuUsages, cpuAllocatables, memAllocatables, \
-        QoS, NumSatifiesPods, NumPods, PredPenalty 
+        QoS, NumSatifiesPods, NumPods, PredPenalty, cpuUsageStd, memUsageStd
 
 def formatCpuQuatity(str):
     strArray = re.split('(\d+)', str)
@@ -240,9 +252,11 @@ QoSs = []
 NumSatifiesPods = []
 NumPods = []
 PredPenalties = []
+cpuUsageStd = []
+memUsageStd = []
 
 for m in methods:
-    b, ol, ob, u_cpu, u_mem, ur_cpu, ur_mem, a_cpu, a_mem, mu, c_cpu, c_mem, q, nsp, nps, p = loadLog(path+"/kubesim_"+m+".log")
+    b, ol, ob, u_cpu, u_mem, ur_cpu, ur_mem, a_cpu, a_mem, mu, c_cpu, c_mem, q, nsp, nps, p, cStd, mStd = loadLog(path+"/kubesim_"+m+".log")
     busyNodes.append(b)
     overloadNodes.append(ol)
     overbookNodes.append(ob)
@@ -259,6 +273,8 @@ for m in methods:
     NumSatifiesPods.append(nsp)
     NumPods.append(nps)
     PredPenalties.append(p)
+    cpuUsageStd.append(cStd)
+    memUsageStd.append(mStd)
 
 for i in range(methodsNum):
     if (len(cpuRequests[i]) < data_range[1]):
@@ -289,6 +305,33 @@ if plotObj:
     # plt.ylim(0,Y_MAX)
 
     fig.savefig(FIG_PATH+"/max_cpu_usage.pdf", bbox_inches='tight')
+
+    ## plot STD of usage
+    Y_MAX = 0.3
+    fig = plt.figure(figsize=FIG_ONE_COL)
+    max_len = 0
+    for i in range(methodsNum):
+        plt.plot([x / 60.0 for x in range(0,len(memUsageStd[i])*tick,tick)], memUsageStd[i], color=colors[i])
+
+    plt.legend(legends, loc='best')
+    plt.xlabel(STR_TIME_HOUR)
+    plt.ylabel("Memory Usage std.")
+    plt.ylim(0,Y_MAX)
+
+    fig.savefig(FIG_PATH+"/std_mem_usage.pdf", bbox_inches='tight')
+    ##
+    Y_MAX = 0
+    fig = plt.figure(figsize=FIG_ONE_COL)
+    max_len = 0
+    for i in range(methodsNum):
+        plt.plot([x / 60.0 for x in range(0,len(cpuUsageStd[i])*tick,tick)], cpuUsageStd[i], color=colors[i])
+    
+    plt.legend(legends, loc='best')
+    plt.xlabel(STR_TIME_HOUR)
+    plt.ylabel("CPU Usage std.")
+    # plt.ylim(0,Y_MAX)
+
+    fig.savefig(FIG_PATH+"/std_cpu_usage.pdf", bbox_inches='tight')
 
 if plotUtilization:
     cpuReqUtil = []
@@ -506,15 +549,20 @@ if plotOverbook:
 ## plot QoS
 if plotQoS:
     fig = plt.figure(figsize=FIG_ONE_COL)
+    X_MAX=0
     for i in range(methodsNum):
         qos = QoSs[i][data_range[0]:data_range[1]]
-        plt.plot([x / 60.0 for x in range(0,len(qos)*tick,tick)], qos, color=colors[i])
+        xvals = [x / 60.0 for x in range(0,len(qos)*tick,tick)]
+        plt.plot(xvals, qos, color=colors[i])
+        if xvals[len(xvals)-1] > X_MAX:
+            X_MAX = xvals[len(xvals)-1]
     
     legends = methodNames   
     plt.legend(legends, loc='best')
     plt.xlabel(STR_TIME_HOUR)
     plt.ylabel(STR_QoS)
     plt.ylim(0,1.1)
+    plt.xlim(X_MAX)
 
     fig.savefig(FIG_PATH+"/qos.pdf", bbox_inches='tight')
     
@@ -584,9 +632,13 @@ if plotQoS:
 
 if plotPredictionPenalty:
     Y_MAX = 1.5
+    X_MAX = 0
     fig = plt.figure(figsize=FIG_ONE_COL)
     for i in range(methodsNum-proposed_idx):
-        plt.plot([x / 60.0 for x in range(0,len(PredPenalties[proposed_idx+i])*tick,tick)], PredPenalties[proposed_idx+i], color=colors[proposed_idx+i])
+        xvals = [x / 60.0 for x in range(0,len(PredPenalties[proposed_idx+i])*tick,tick)]
+        plt.plot(xvals, PredPenalties[proposed_idx+i], color=colors[proposed_idx+i])
+        if xvals[len(xvals)-1] > X_MAX:
+            X_MAX = xvals[len(xvals)-1]
         Y_MAX = max(np.amax(PredPenalties[proposed_idx+i]),Y_MAX)
     
     legends = methodNames[proposed_idx:]
@@ -594,6 +646,7 @@ if plotPredictionPenalty:
     plt.xlabel(STR_TIME_HOUR)
     plt.ylabel(STR_Pred_Penalty)    
     plt.ylim(0,Y_MAX*1.2)
+    plt.xlim(0,X_MAX)
 
     fig.savefig(FIG_PATH+"/pred_penalty.pdf", bbox_inches='tight')
 

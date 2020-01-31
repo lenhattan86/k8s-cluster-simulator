@@ -16,6 +16,9 @@ def autolabel(rects, ax, xpos='center'):
 
     for rect in rects:
         height = rect.get_height()
+        if height%1==0:
+            height=int(height)
+            
         ax.annotate('{}'.format(height),
                     xy=(rect.get_x() + rect.get_width() / 2, height),
                     xytext=(offset[xpos]*3, 3),  # use 3 points offset

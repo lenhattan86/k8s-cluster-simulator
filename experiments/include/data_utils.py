@@ -53,6 +53,7 @@ def read_task_csv(f):
     mMaxUsages = []
     cUsageStds = []
     mUsageStds = []
+    
 
     df = read_csv(f, header=None, index_col=False, names=cols)
     for index, event in df.iterrows():

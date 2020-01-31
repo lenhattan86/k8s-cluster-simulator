@@ -48,3 +48,6 @@ mkdir ~/go; mkdir ~/go/src; mkdir ~/go/src/github.com ; \
 mkdir ~/go/src/github.com/pfnet-research; \
 cd ~/go/src/github.com/pfnet-research; \
 git clone https://github.com/lenhattan86/k8s-cluster-simulator 
+
+
+git clone https://github.com/am-manideep/ResourceAllocation
