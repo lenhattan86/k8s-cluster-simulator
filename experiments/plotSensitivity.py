@@ -37,9 +37,9 @@ if plotClusterSize:
     data.append(worstFitVals)
     oversubVals = [14.9, 14.1, 9.2, 6.2, 9.9, 2.5]
     data.append(oversubVals)
-    flexFVals = [1.1, 1.2, 0.9, 1.6, 1.1, 0.6]
+    flexFVals = [1.1, 1.2, 0.9, 1.6, 1.1, 0.7]
     data.append(flexFVals)
-    flexLVals = [4.4, 2.6, 2.6, 2.2, 1.3, 0.5]
+    flexLVals = [4.4, 2.6, 2.6, 2.2, 1.3, 0.7]
     data.append(flexLVals)
 
     Y_MAX = np.amax(oversubVals)*1.1
