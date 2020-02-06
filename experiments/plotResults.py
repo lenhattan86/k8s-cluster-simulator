@@ -317,6 +317,7 @@ if plotObj:
     plt.xlabel(STR_TIME_HOUR)
     plt.ylabel("Memory Usage std.")
     plt.ylim(0,Y_MAX)
+    plt.xlim(0,24)
 
     fig.savefig(FIG_PATH+"/std_mem_usage.pdf", bbox_inches='tight')
     ##
@@ -562,7 +563,8 @@ if plotQoS:
     plt.xlabel(STR_TIME_HOUR)
     plt.ylabel(STR_QoS)
     plt.ylim(0,1.1)
-    plt.xlim(X_MAX)
+    # plt.xlim(X_MAX)
+    plt.xlim(0,24)
 
     fig.savefig(FIG_PATH+"/qos.pdf", bbox_inches='tight')
     
@@ -646,7 +648,8 @@ if plotPredictionPenalty:
     plt.xlabel(STR_TIME_HOUR)
     plt.ylabel(STR_Pred_Penalty)    
     plt.ylim(0,Y_MAX*1.2)
-    plt.xlim(0,X_MAX)
+    # plt.xlim(0,X_MAX)
+    plt.xlim(0,24)
 
     fig.savefig(FIG_PATH+"/pred_penalty.pdf", bbox_inches='tight')
 

@@ -38,7 +38,7 @@ STR_QoS = "QoS"
 STR_Pred_Penalty = "Prediction penalty"
 STR_CDF = "cdf"
 
-STR_QoS_Violation = "Qos violation (%)"
+STR_QoS_Violation = "QoS violation (%)"
 
 STR_Cluster_Size = "Cluster size (nodes)"
 STR_Demand_Scale = "Demand scale"
