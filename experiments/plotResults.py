@@ -361,14 +361,14 @@ if plotUtilization:
         cpuU = cpuAllocations[i]
         memU = memAllocations[i]
 
-        cpuReqUtil.append(int(round(np.average(cpuR[data_range[0]:data_range[1]])/cpuCap*100, 0)))  
-        memReqUtil.append(int(round(np.average(memR[data_range[0]:data_range[1]])/memCap*100, 0)))
+        cpuReqUtil.append(int(round(np.average(cpuR[data_range[0]:data_range[1]])/cpuCap*100, 2)))  
+        memReqUtil.append(int(round(np.average(memR[data_range[0]:data_range[1]])/memCap*100, 2)))
 
-        cpuDemandUtil.append(int(round(np.average(cpuD[data_range[0]:data_range[1]])/cpuCap*100, 0))) 
-        memDemandUtil.append(int(round(np.average(memD[data_range[0]:data_range[1]])/memCap*100, 0)))
+        cpuDemandUtil.append(int(round(np.average(cpuD[data_range[0]:data_range[1]])/cpuCap*100, 2))) 
+        memDemandUtil.append(int(round(np.average(memD[data_range[0]:data_range[1]])/memCap*100, 2)))
 
-        cpuUsageUtil.append(int(round(np.average(cpuU[data_range[0]:data_range[1]])/cpuCap*100,0)))  
-        memUsageUtil.append(int(round(np.average(memU[data_range[0]:data_range[1]])/memCap*100,0)))
+        cpuUsageUtil.append(int(round(np.average(cpuU[data_range[0]:data_range[1]])/cpuCap*100,2)))  
+        memUsageUtil.append(int(round(np.average(memU[data_range[0]:data_range[1]])/memCap*100,2)))
 
     x = np.arange(methodsNum) 
     width = GBAR_WIDTH/2
